@@ -1,0 +1,13 @@
+### CREATE USER
+POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{
+  "firstName": "Genius",
+  "lastName": "Kekana",
+  "email": "genius.test@linkride.co.za",
+  "phoneNumber": "0712345678",
+  "passwordHash": "test-password",
+  "createdAt": "2026-09-15T04:00:00",
+  "accountStatus": "ACTIVE"
+}

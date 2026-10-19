@@ -1,0 +1,45 @@
+# =========================
+# IntelliJ / IDE
+# =========================
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# =========================
+# Java / Maven
+# =========================
+backend/link-ride-api/target/
+*.class
+
+# =========================
+# Flutter / Dart
+# =========================
+frontend/.dart_tool/
+frontend/build/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+
+# Android generated/local
+frontend/android/.gradle/
+frontend/android/local.properties
+
+# iOS generated
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+
+# =========================
+# Logs / OS
+# =========================
+*.log
+Thumbs.db
+.DS_Store
+
+# =========================
+# Secrets / local env
+# =========================
+.env
+.env.*
+*.env
