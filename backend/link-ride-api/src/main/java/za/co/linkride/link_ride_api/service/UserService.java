@@ -22,15 +22,18 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final EmailVerificationService emailVerificationService;
 
     public UserService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService) {
+            JwtService jwtService,
+            EmailVerificationService emailVerificationService) {
 
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     // REGISTER USER
@@ -59,10 +62,13 @@ public class UserService {
 
         // These values are controlled by the backend
         user.setCreatedAt(LocalDateTime.now());
-        user.setAccountStatus("ACTIVE");
+        user.setAccountStatus("PENDING_VERIFICATION");
 
-        // Save to PostgreSQL
+        // Save to PostgreSQL before creating the verification token
         User savedUser = userRepository.save(user);
+
+        // Send a one-time verification code to the registered email address
+        emailVerificationService.sendVerificationCode(savedUser);
 
         // Return safe user information only
         return new UserResponse(
@@ -96,6 +102,12 @@ public class UserService {
         if (!passwordMatches) {
             throw new InvalidCredentialsException(
                     "Invalid email or password"
+            );
+        }
+
+        if (!"ACTIVE".equalsIgnoreCase(user.getAccountStatus())) {
+            throw new InvalidCredentialsException(
+                    "Please verify your email before signing in."
             );
         }
 

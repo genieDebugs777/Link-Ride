@@ -15,6 +15,9 @@ import za.co.linkride.link_ride_api.dto.LoginRequest;
 import java.util.List;
 import za.co.linkride.link_ride_api.dto.LoginResponse;
 import za.co.linkride.link_ride_api.dto.UserUpdateRequest;
+import za.co.linkride.link_ride_api.dto.VerifyEmailRequest;
+import za.co.linkride.link_ride_api.dto.ResendVerificationRequest;
+import za.co.linkride.link_ride_api.service.EmailVerificationService;
 
 @RestController
 @RequestMapping("/api/users")
@@ -22,14 +25,18 @@ public class UserController {
 
     private final UserService userService;
     private final PasswordResetService passwordResetService;
+    private final EmailVerificationService emailVerificationService;
 
     public UserController(
             UserService userService,
-            PasswordResetService passwordResetService) {
+            PasswordResetService passwordResetService,
+            EmailVerificationService emailVerificationService) {
 
         this.userService = userService;
         this.passwordResetService =
                 passwordResetService;
+        this.emailVerificationService =
+                emailVerificationService;
     }
 
     // REGISTER
@@ -40,6 +47,31 @@ public class UserController {
         UserResponse registeredUser = userService.registerUser(request);
 
         return ResponseEntity.ok(registeredUser);
+    }
+
+    // VERIFY EMAIL
+    @PostMapping("/verify-email")
+    public ResponseEntity<Void> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request) {
+
+        emailVerificationService.verifyEmail(
+                request.getEmail(),
+                request.getVerificationCode()
+        );
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // RESEND VERIFICATION CODE
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerificationCode(
+            @Valid @RequestBody ResendVerificationRequest request) {
+
+        emailVerificationService.resendVerificationCode(
+                request.getEmail()
+        );
+
+        return ResponseEntity.noContent().build();
     }
 
     // LOGIN

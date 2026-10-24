@@ -67,6 +67,79 @@ class AuthService {
     );
   }
 
+  Future<void> verifyEmail({
+    required String email,
+    required String verificationCode,
+  }) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/users/verify-email');
+
+    final http.Response response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'verificationCode': verificationCode}),
+    );
+
+    if (response.statusCode == 204 || response.statusCode == 200) {
+      return;
+    }
+
+    Map<String, dynamic> responseData = {};
+
+    if (response.body.trim().isNotEmpty) {
+      try {
+        final dynamic decoded = jsonDecode(response.body);
+
+        if (decoded is Map<String, dynamic>) {
+          responseData = decoded;
+        } else if (decoded is Map) {
+          responseData = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        // Preserve fallback message below.
+      }
+    }
+
+    throw Exception(
+      responseData['message'] ?? 'Unable to verify your email address.',
+    );
+  }
+
+  Future<void> resendVerificationCode({required String email}) async {
+    final Uri url = Uri.parse(
+      '${ApiConfig.baseUrl}/api/users/resend-verification',
+    );
+
+    final http.Response response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+
+    if (response.statusCode == 204 || response.statusCode == 200) {
+      return;
+    }
+
+    Map<String, dynamic> responseData = {};
+
+    if (response.body.trim().isNotEmpty) {
+      try {
+        final dynamic decoded = jsonDecode(response.body);
+
+        if (decoded is Map<String, dynamic>) {
+          responseData = decoded;
+        } else if (decoded is Map) {
+          responseData = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        // Preserve fallback message below.
+      }
+    }
+
+    throw Exception(
+      responseData['message'] ?? 'Unable to resend the verification code.',
+    );
+  }
+
   Future<Map<String, dynamic>> requestPasswordReset({
     required String email,
   }) async {

@@ -2,30 +2,25 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../theme/link_ride_theme.dart';
+import 'verify_email_screen.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
 
   @override
-  State<RegistrationScreen> createState() =>
-      _RegistrationScreenState();
+  State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
 
-class _RegistrationScreenState
-    extends State<RegistrationScreen> {
-  final GlobalKey<FormState> _formKey =
-      GlobalKey<FormState>();
+class _RegistrationScreenState extends State<RegistrationScreen> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final AuthService _authService = AuthService();
 
-  final TextEditingController fullNameController =
-      TextEditingController();
+  final TextEditingController fullNameController = TextEditingController();
 
-  final TextEditingController emailController =
-      TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
-  final TextEditingController passwordController =
-      TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   final TextEditingController confirmPasswordController =
       TextEditingController();
@@ -51,9 +46,7 @@ class _RegistrationScreenState
     final List<String> parts = value
         .trim()
         .split(RegExp(r'\s+'))
-        .where(
-          (part) => part.isNotEmpty,
-        )
+        .where((part) => part.isNotEmpty)
         .toList();
 
     if (parts.length < 2) {
@@ -116,19 +109,15 @@ class _RegistrationScreenState
       return;
     }
 
-    final List<String> nameParts =
-        fullNameController.text
-            .trim()
-            .split(RegExp(r'\s+'))
-            .where(
-              (part) => part.isNotEmpty,
-            )
-            .toList();
+    final List<String> nameParts = fullNameController.text
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
 
     final String firstName = nameParts.first;
 
-    final String lastName =
-        nameParts.skip(1).join(' ');
+    final String lastName = nameParts.skip(1).join(' ');
 
     setState(() {
       _isCreatingAccount = true;
@@ -146,21 +135,27 @@ class _RegistrationScreenState
         return;
       }
 
-      final String registeredEmail =
-          emailController.text.trim();
+      final String registeredEmail = emailController.text.trim();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Account created successfully. You can now sign in.',
-          ),
+      final bool? verified = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VerifyEmailScreen(email: registeredEmail),
         ),
       );
 
-      Navigator.pop(
-        context,
-        registeredEmail,
-      );
+      if (!mounted) {
+        return;
+      }
+
+      if (verified == true) {
+        Navigator.pop(context, registeredEmail);
+        return;
+      }
+
+      setState(() {
+        _isCreatingAccount = false;
+      });
     } catch (error) {
       if (!mounted) {
         return;
@@ -172,14 +167,7 @@ class _RegistrationScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            error
-                .toString()
-                .replaceFirst(
-                  'Exception: ',
-                  '',
-                ),
-          ),
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
         ),
       );
     }
@@ -214,25 +202,15 @@ class _RegistrationScreenState
               },
               child: SingleChildScrollView(
                 keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior
-                        .onDrag,
-                padding: const EdgeInsets.fromLTRB(
-                  20,
-                  14,
-                  20,
-                  32,
-                ),
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints:
-                        const BoxConstraints(
-                      maxWidth: 430,
-                    ),
+                    constraints: const BoxConstraints(maxWidth: 430),
                     child: Form(
                       key: _formKey,
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.stretch,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _topBar(),
 
@@ -274,16 +252,10 @@ class _RegistrationScreenState
         const Spacer(),
 
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 7,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: LinkRideColors.softBlue,
-            borderRadius:
-                BorderRadius.circular(
-              LinkRideRadius.pill,
-            ),
+            borderRadius: BorderRadius.circular(LinkRideRadius.pill),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
@@ -291,8 +263,7 @@ class _RegistrationScreenState
               Icon(
                 Icons.person_add_alt_1_rounded,
                 size: 15,
-                color:
-                    LinkRideColors.primaryBlue,
+                color: LinkRideColors.primaryBlue,
               ),
               SizedBox(width: 6),
               Text(
@@ -300,8 +271,7 @@ class _RegistrationScreenState
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
-                  color:
-                      LinkRideColors.primaryBlue,
+                  color: LinkRideColors.primaryBlue,
                 ),
               ),
             ],
@@ -320,15 +290,10 @@ class _RegistrationScreenState
           padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
             color: LinkRideColors.surface,
-            borderRadius:
-                BorderRadius.circular(24),
-            boxShadow:
-                LinkRideShadows.elevated,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: LinkRideShadows.elevated,
           ),
-          child: Image.asset(
-            'assets/link_ride_logo.png',
-            fit: BoxFit.contain,
-          ),
+          child: Image.asset('assets/link_ride_logo.png', fit: BoxFit.contain),
         ),
 
         const SizedBox(height: 18),
@@ -340,8 +305,7 @@ class _RegistrationScreenState
             fontSize: 29,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.7,
-            color:
-                LinkRideColors.primaryBlue,
+            color: LinkRideColors.primaryBlue,
           ),
         ),
 
@@ -353,8 +317,7 @@ class _RegistrationScreenState
           style: TextStyle(
             fontSize: 14,
             height: 1.5,
-            color:
-                LinkRideColors.textSecondary,
+            color: LinkRideColors.textSecondary,
           ),
         ),
       ],
@@ -366,26 +329,19 @@ class _RegistrationScreenState
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: LinkRideColors.surface,
-        borderRadius:
-            BorderRadius.circular(
-          LinkRideRadius.extraLarge,
-        ),
-        border: Border.all(
-          color: LinkRideColors.border,
-        ),
+        borderRadius: BorderRadius.circular(LinkRideRadius.extraLarge),
+        border: Border.all(color: LinkRideColors.border),
         boxShadow: LinkRideShadows.soft,
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
             'Your details',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color:
-                  LinkRideColors.textPrimary,
+              color: LinkRideColors.textPrimary,
             ),
           ),
 
@@ -396,8 +352,7 @@ class _RegistrationScreenState
             style: TextStyle(
               fontSize: 13,
               height: 1.4,
-              color:
-                  LinkRideColors.textSecondary,
+              color: LinkRideColors.textSecondary,
             ),
           ),
 
@@ -410,20 +365,12 @@ class _RegistrationScreenState
           TextFormField(
             controller: fullNameController,
             validator: validateName,
-            textInputAction:
-                TextInputAction.next,
-            textCapitalization:
-                TextCapitalization.words,
-            autofillHints: const [
-              AutofillHints.name,
-            ],
-            decoration:
-                const InputDecoration(
-              hintText:
-                  'First and last name',
-              prefixIcon: Icon(
-                Icons.person_outline_rounded,
-              ),
+            textInputAction: TextInputAction.next,
+            textCapitalization: TextCapitalization.words,
+            autofillHints: const [AutofillHints.name],
+            decoration: const InputDecoration(
+              hintText: 'First and last name',
+              prefixIcon: Icon(Icons.person_outline_rounded),
             ),
           ),
 
@@ -436,19 +383,12 @@ class _RegistrationScreenState
           TextFormField(
             controller: emailController,
             validator: validateEmail,
-            keyboardType:
-                TextInputType.emailAddress,
-            textInputAction:
-                TextInputAction.next,
-            autofillHints: const [
-              AutofillHints.email,
-            ],
-            decoration:
-                const InputDecoration(
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.email],
+            decoration: const InputDecoration(
               hintText: 'name@example.com',
-              prefixIcon: Icon(
-                Icons.mail_outline_rounded,
-              ),
+              prefixIcon: Icon(Icons.mail_outline_rounded),
             ),
           ),
 
@@ -462,31 +402,22 @@ class _RegistrationScreenState
             controller: passwordController,
             validator: validatePassword,
             obscureText: obscurePassword,
-            textInputAction:
-                TextInputAction.next,
-            autofillHints: const [
-              AutofillHints.newPassword,
-            ],
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.newPassword],
             decoration: InputDecoration(
               hintText: 'Create a password',
-              prefixIcon: const Icon(
-                Icons.lock_outline_rounded,
-              ),
+              prefixIcon: const Icon(Icons.lock_outline_rounded),
               suffixIcon: IconButton(
-                tooltip: obscurePassword
-                    ? 'Show password'
-                    : 'Hide password',
+                tooltip: obscurePassword ? 'Show password' : 'Hide password',
                 onPressed: () {
                   setState(() {
-                    obscurePassword =
-                        !obscurePassword;
+                    obscurePassword = !obscurePassword;
                   });
                 },
                 icon: Icon(
                   obscurePassword
                       ? Icons.visibility_outlined
-                      : Icons
-                          .visibility_off_outlined,
+                      : Icons.visibility_off_outlined,
                 ),
               ),
             ),
@@ -495,27 +426,18 @@ class _RegistrationScreenState
           const SizedBox(height: 9),
 
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 10,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color:
-                  LinkRideColors.surfaceSoft,
-              borderRadius:
-                  BorderRadius.circular(12),
-              border: Border.all(
-                color: LinkRideColors.border,
-              ),
+              color: LinkRideColors.surfaceSoft,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: LinkRideColors.border),
             ),
             child: const Row(
               children: [
                 Icon(
-                  Icons
-                      .verified_user_outlined,
+                  Icons.verified_user_outlined,
                   size: 16,
-                  color:
-                      LinkRideColors.linkGreen,
+                  color: LinkRideColors.linkGreen,
                 ),
                 SizedBox(width: 8),
                 Expanded(
@@ -523,9 +445,7 @@ class _RegistrationScreenState
                     'Use at least 8 characters.',
                     style: TextStyle(
                       fontSize: 12,
-                      color:
-                          LinkRideColors
-                              .textSecondary,
+                      color: LinkRideColors.textSecondary,
                     ),
                   ),
                 ),
@@ -540,43 +460,30 @@ class _RegistrationScreenState
           const SizedBox(height: 8),
 
           TextFormField(
-            controller:
-                confirmPasswordController,
-            validator:
-                validateConfirmPassword,
-            obscureText:
-                obscureConfirmPassword,
-            textInputAction:
-                TextInputAction.done,
-            autofillHints: const [
-              AutofillHints.newPassword,
-            ],
+            controller: confirmPasswordController,
+            validator: validateConfirmPassword,
+            obscureText: obscureConfirmPassword,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.newPassword],
             onFieldSubmitted: (_) {
               createAccount();
             },
             decoration: InputDecoration(
-              hintText:
-                  'Re-enter your password',
-              prefixIcon: const Icon(
-                Icons
-                    .lock_reset_outlined,
-              ),
+              hintText: 'Re-enter your password',
+              prefixIcon: const Icon(Icons.lock_reset_outlined),
               suffixIcon: IconButton(
-                tooltip:
-                    obscureConfirmPassword
-                        ? 'Show password'
-                        : 'Hide password',
+                tooltip: obscureConfirmPassword
+                    ? 'Show password'
+                    : 'Hide password',
                 onPressed: () {
                   setState(() {
-                    obscureConfirmPassword =
-                        !obscureConfirmPassword;
+                    obscureConfirmPassword = !obscureConfirmPassword;
                   });
                 },
                 icon: Icon(
                   obscureConfirmPassword
                       ? Icons.visibility_outlined
-                      : Icons
-                          .visibility_off_outlined,
+                      : Icons.visibility_off_outlined,
                 ),
               ),
             ),
@@ -587,45 +494,26 @@ class _RegistrationScreenState
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed:
-                  _isCreatingAccount
-                      ? null
-                      : createAccount,
+              onPressed: _isCreatingAccount ? null : createAccount,
               child: AnimatedSwitcher(
-                duration:
-                    const Duration(
-                  milliseconds: 180,
-                ),
+                duration: const Duration(milliseconds: 180),
                 child: _isCreatingAccount
                     ? const SizedBox(
-                        key: ValueKey(
-                          'register-progress',
-                        ),
+                        key: ValueKey('register-progress'),
                         width: 20,
                         height: 20,
-                        child:
-                            CircularProgressIndicator(
+                        child: CircularProgressIndicator(
                           strokeWidth: 2.2,
                           color: Colors.white,
                         ),
                       )
                     : const Row(
-                        key: ValueKey(
-                          'register-label',
-                        ),
-                        mainAxisAlignment:
-                            MainAxisAlignment
-                                .center,
+                        key: ValueKey('register-label'),
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            'Create Account',
-                          ),
+                          Text('Create Account'),
                           SizedBox(width: 8),
-                          Icon(
-                            Icons
-                                .arrow_forward_rounded,
-                            size: 19,
-                          ),
+                          Icon(Icons.arrow_forward_rounded, size: 19),
                         ],
                       ),
               ),
@@ -635,22 +523,19 @@ class _RegistrationScreenState
           const SizedBox(height: 14),
 
           const Row(
-            mainAxisAlignment:
-                MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.lock_outline_rounded,
                 size: 14,
-                color:
-                    LinkRideColors.textMuted,
+                color: LinkRideColors.textMuted,
               ),
               SizedBox(width: 6),
               Text(
                 'Your account details are handled securely',
                 style: TextStyle(
                   fontSize: 11.5,
-                  color:
-                      LinkRideColors.textMuted,
+                  color: LinkRideColors.textMuted,
                 ),
               ),
             ],
@@ -662,16 +547,11 @@ class _RegistrationScreenState
 
   Widget _signInPrompt() {
     return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text(
           'Already have an account?',
-          style: TextStyle(
-            fontSize: 13,
-            color:
-                LinkRideColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 13, color: LinkRideColors.textSecondary),
         ),
 
         const SizedBox(width: 5),
@@ -680,20 +560,15 @@ class _RegistrationScreenState
           onTap: () {
             Navigator.pop(context);
           },
-          borderRadius:
-              BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(8),
           child: const Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: 5,
-              vertical: 5,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
             child: Text(
               'Sign In',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
-                color:
-                    LinkRideColors.primaryBlue,
+                color: LinkRideColors.primaryBlue,
               ),
             ),
           ),
@@ -708,8 +583,7 @@ class _RegistrationScreenState
       style: const TextStyle(
         fontSize: 13.5,
         fontWeight: FontWeight.w700,
-        color:
-            LinkRideColors.textPrimary,
+        color: LinkRideColors.textPrimary,
       ),
     );
   }
@@ -726,41 +600,26 @@ class _RegistrationScreenState
         shape: const CircleBorder(),
         child: InkWell(
           onTap: onTap,
-          customBorder:
-              const CircleBorder(),
+          customBorder: const CircleBorder(),
           child: Container(
             width: 42,
             height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color:
-                    LinkRideColors.border,
-              ),
+              border: Border.all(color: LinkRideColors.border),
             ),
-            child: Icon(
-              icon,
-              size: 21,
-              color:
-                  LinkRideColors.primaryBlue,
-            ),
+            child: Icon(icon, size: 21, color: LinkRideColors.primaryBlue),
           ),
         ),
       ),
     );
   }
 
-  Widget _backgroundCircle({
-    required double size,
-    required Color color,
-  }) {
+  Widget _backgroundCircle({required double size, required Color color}) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }
