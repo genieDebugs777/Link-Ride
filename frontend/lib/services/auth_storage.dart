@@ -8,42 +8,27 @@ class AuthStorage {
   static const String _userIdKey = 'user_id';
 
   Future<void> saveToken(String token) async {
-    await _storage.write(
-      key: _tokenKey,
-      value: token,
-    );
+    await _storage.write(key: _tokenKey, value: token);
   }
 
   Future<String?> getToken() async {
-    return await _storage.read(
-      key: _tokenKey,
-    );
+    return await _storage.read(key: _tokenKey);
   }
 
   Future<void> saveFirstName(String firstName) async {
-    await _storage.write(
-      key: _firstNameKey,
-      value: firstName,
-    );
+    await _storage.write(key: _firstNameKey, value: firstName);
   }
 
   Future<String?> getFirstName() async {
-    return await _storage.read(
-      key: _firstNameKey,
-    );
+    return await _storage.read(key: _firstNameKey);
   }
 
   Future<void> saveUserId(int userId) async {
-    await _storage.write(
-      key: _userIdKey,
-      value: userId.toString(),
-    );
+    await _storage.write(key: _userIdKey, value: userId.toString());
   }
 
   Future<int?> getUserId() async {
-    final String? userId = await _storage.read(
-      key: _userIdKey,
-    );
+    final String? userId = await _storage.read(key: _userIdKey);
 
     if (userId == null) {
       return null;
@@ -53,16 +38,10 @@ class AuthStorage {
   }
 
   Future<void> clearSession() async {
-    await _storage.delete(
-      key: _tokenKey,
-    );
+    await _storage.delete(key: _tokenKey);
 
-    await _storage.delete(
-      key: _firstNameKey,
-    );
+    await _storage.delete(key: _firstNameKey);
 
-    await _storage.delete(
-      key: _userIdKey,
-    );
+    await _storage.delete(key: _userIdKey);
   }
 }

@@ -6,8 +6,7 @@ class JourneyPreferencesService {
   static const String _metrorailKey = 'journey_mode_metrorail';
   static const String _busKey = 'journey_mode_bus';
   static const String _taxiKey = 'journey_mode_taxi';
-  static const String _fewerTransfersKey =
-      'journey_prefer_fewer_transfers';
+  static const String _fewerTransfersKey = 'journey_prefer_fewer_transfers';
 
   Future<void> savePreferences({
     required String priority,
@@ -17,57 +16,31 @@ class JourneyPreferencesService {
     required bool taxiSelected,
     required bool preferFewerTransfers,
   }) async {
-    final SharedPreferences preferences =
-        await SharedPreferences.getInstance();
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
 
-    await preferences.setString(
-      _priorityKey,
-      priority,
-    );
+    await preferences.setString(_priorityKey, priority);
 
-    await preferences.setBool(
-      _gautrainKey,
-      gautrainSelected,
-    );
+    await preferences.setBool(_gautrainKey, gautrainSelected);
 
-    await preferences.setBool(
-      _metrorailKey,
-      metrorailSelected,
-    );
+    await preferences.setBool(_metrorailKey, metrorailSelected);
 
-    await preferences.setBool(
-      _busKey,
-      busSelected,
-    );
+    await preferences.setBool(_busKey, busSelected);
 
-    await preferences.setBool(
-      _taxiKey,
-      taxiSelected,
-    );
+    await preferences.setBool(_taxiKey, taxiSelected);
 
-    await preferences.setBool(
-      _fewerTransfersKey,
-      preferFewerTransfers,
-    );
+    await preferences.setBool(_fewerTransfersKey, preferFewerTransfers);
   }
 
   Future<Map<String, dynamic>> getPreferences() async {
-    final SharedPreferences preferences =
-        await SharedPreferences.getInstance();
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
 
     return {
-      'priority':
-          preferences.getString(_priorityKey) ?? 'Balanced',
-      'gautrainSelected':
-          preferences.getBool(_gautrainKey) ?? true,
-      'metrorailSelected':
-          preferences.getBool(_metrorailKey) ?? true,
-      'busSelected':
-          preferences.getBool(_busKey) ?? true,
-      'taxiSelected':
-          preferences.getBool(_taxiKey) ?? true,
-      'preferFewerTransfers':
-          preferences.getBool(_fewerTransfersKey) ?? false,
+      'priority': preferences.getString(_priorityKey) ?? 'Balanced',
+      'gautrainSelected': preferences.getBool(_gautrainKey) ?? true,
+      'metrorailSelected': preferences.getBool(_metrorailKey) ?? true,
+      'busSelected': preferences.getBool(_busKey) ?? true,
+      'taxiSelected': preferences.getBool(_taxiKey) ?? true,
+      'preferFewerTransfers': preferences.getBool(_fewerTransfersKey) ?? false,
     };
   }
 }

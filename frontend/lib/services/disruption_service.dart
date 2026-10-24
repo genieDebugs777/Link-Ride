@@ -8,9 +8,7 @@ class DisruptionService {
   Future<List<Map<String, dynamic>>> getActiveDisruptions({
     required String token,
   }) async {
-    final Uri uri = Uri.parse(
-      '${ApiConfig.baseUrl}/api/disruptions/active',
-    );
+    final Uri uri = Uri.parse('${ApiConfig.baseUrl}/api/disruptions/active');
 
     final http.Response response = await http.get(
       uri,
@@ -25,30 +23,21 @@ class DisruptionService {
         return [];
       }
 
-      final dynamic decoded =
-          jsonDecode(response.body);
+      final dynamic decoded = jsonDecode(response.body);
 
       if (decoded is! List) {
-        throw Exception(
-          'Link Ride returned an invalid disruptions response.',
-        );
+        throw Exception('Link Ride returned an invalid disruptions response.');
       }
 
       return decoded
           .map<Map<String, dynamic>>(
-            (dynamic item) =>
-                Map<String, dynamic>.from(
-              item as Map,
-            ),
+            (dynamic item) => Map<String, dynamic>.from(item as Map),
           )
           .toList();
     }
 
-    if (response.statusCode == 401 ||
-        response.statusCode == 403) {
-      throw Exception(
-        'Your Link Ride session is no longer valid.',
-      );
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('Your Link Ride session is no longer valid.');
     }
 
     throw Exception(
@@ -78,8 +67,7 @@ class DisruptionService {
         return [];
       }
 
-      final dynamic decoded =
-          jsonDecode(response.body);
+      final dynamic decoded = jsonDecode(response.body);
 
       if (decoded is! List) {
         throw Exception(
@@ -89,36 +77,26 @@ class DisruptionService {
 
       return decoded
           .map<Map<String, dynamic>>(
-            (dynamic item) =>
-                Map<String, dynamic>.from(
-              item as Map,
-            ),
+            (dynamic item) => Map<String, dynamic>.from(item as Map),
           )
           .toList();
     }
 
-    if (response.statusCode == 401 ||
-        response.statusCode == 403) {
-      throw Exception(
-        'Your Link Ride session is no longer valid.',
-      );
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('Your Link Ride session is no longer valid.');
     }
 
     if (response.statusCode == 400) {
-      String message =
-          'Unable to check journey disruptions.';
+      String message = 'Unable to check journey disruptions.';
 
       if (response.body.trim().isNotEmpty) {
         try {
-          final dynamic decoded =
-              jsonDecode(response.body);
+          final dynamic decoded = jsonDecode(response.body);
 
           if (decoded is String) {
             message = decoded;
-          } else if (decoded is Map &&
-              decoded['message'] != null) {
-            message =
-                decoded['message'].toString();
+          } else if (decoded is Map && decoded['message'] != null) {
+            message = decoded['message'].toString();
           }
         } catch (_) {
           message = response.body;
@@ -133,5 +111,4 @@ class DisruptionService {
       'Status code: ${response.statusCode}',
     );
   }
-
 }

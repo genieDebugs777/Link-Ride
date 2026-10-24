@@ -2,10 +2,9 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-class TicketService {
-  static const String _baseUrl =
-      'http://10.0.2.2:8080';
+import 'api_config.dart';
 
+class TicketService {
   Future<Map<String, dynamic>> issueTicket({
     required String token,
     required int journeyId,
@@ -14,8 +13,7 @@ class TicketService {
       token: token,
       journeyId: journeyId,
       endpoint: '/api/tickets/issue',
-      fallbackMessage:
-          'Unable to issue ticket.',
+      fallbackMessage: 'Unable to issue ticket.',
     );
   }
 
@@ -27,8 +25,7 @@ class TicketService {
       token: token,
       journeyId: journeyId,
       endpoint: '/api/tickets/activate',
-      fallbackMessage:
-          'Unable to start journey.',
+      fallbackMessage: 'Unable to start journey.',
     );
   }
 
@@ -40,20 +37,16 @@ class TicketService {
       token: token,
       journeyId: journeyId,
       endpoint: '/api/tickets/complete',
-      fallbackMessage:
-          'Unable to complete journey.',
+      fallbackMessage: 'Unable to complete journey.',
     );
   }
 
   Future<List<Map<String, dynamic>>> getMyTickets({
     required String token,
   }) async {
-    final Uri uri = Uri.parse(
-      '$_baseUrl/api/tickets/mine',
-    );
+    final Uri uri = Uri.parse('${ApiConfig.baseUrl}/api/tickets/mine');
 
-    final http.Response response =
-        await http.get(
+    final http.Response response = await http.get(
       uri,
       headers: {
         'Authorization': 'Bearer $token',
@@ -62,31 +55,20 @@ class TicketService {
     );
 
     if (response.statusCode == 200) {
-      final dynamic decoded =
-          jsonDecode(response.body);
+      final dynamic decoded = jsonDecode(response.body);
 
       if (decoded is! List) {
-        throw Exception(
-          'Link Ride returned an invalid ticket list.',
-        );
+        throw Exception('Link Ride returned an invalid ticket list.');
       }
 
       return decoded
           .whereType<Map>()
-          .map(
-            (item) =>
-                Map<String, dynamic>.from(
-              item,
-            ),
-          )
+          .map((item) => Map<String, dynamic>.from(item))
           .toList();
     }
 
-    if (response.statusCode == 401 ||
-        response.statusCode == 403) {
-      throw Exception(
-        'Your Link Ride session is no longer valid.',
-      );
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('Your Link Ride session is no longer valid.');
     }
 
     throw Exception(
@@ -98,12 +80,9 @@ class TicketService {
   Future<Map<String, dynamic>?> getCurrentTicket({
     required String token,
   }) async {
-    final Uri uri = Uri.parse(
-      '$_baseUrl/api/tickets/current',
-    );
+    final Uri uri = Uri.parse('${ApiConfig.baseUrl}/api/tickets/current');
 
-    final http.Response response =
-        await http.get(
+    final http.Response response = await http.get(
       uri,
       headers: {
         'Authorization': 'Bearer $token',
@@ -112,8 +91,7 @@ class TicketService {
     );
 
     if (response.statusCode == 200) {
-      final dynamic decoded =
-          jsonDecode(response.body);
+      final dynamic decoded = jsonDecode(response.body);
 
       if (decoded is! Map) {
         throw Exception(
@@ -121,20 +99,15 @@ class TicketService {
         );
       }
 
-      return Map<String, dynamic>.from(
-        decoded,
-      );
+      return Map<String, dynamic>.from(decoded);
     }
 
     if (response.statusCode == 404) {
       return null;
     }
 
-    if (response.statusCode == 401 ||
-        response.statusCode == 403) {
-      throw Exception(
-        'Your Link Ride session is no longer valid.',
-      );
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('Your Link Ride session is no longer valid.');
     }
 
     throw Exception(
@@ -149,71 +122,49 @@ class TicketService {
     required String endpoint,
     required String fallbackMessage,
   }) async {
-    final Uri uri = Uri.parse(
-      '$_baseUrl$endpoint',
-    );
+    final Uri uri = Uri.parse('${ApiConfig.baseUrl}$endpoint');
 
-    final http.Response response =
-        await http.post(
+    final http.Response response = await http.post(
       uri,
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode(
-        {
-          'journeyId': journeyId,
-        },
-      ),
+      body: jsonEncode({'journeyId': journeyId}),
     );
 
     if (response.statusCode == 200) {
-      final dynamic decoded =
-          jsonDecode(response.body);
+      final dynamic decoded = jsonDecode(response.body);
 
       if (decoded is! Map) {
-        throw Exception(
-          'Link Ride returned an invalid ticket response.',
-        );
+        throw Exception('Link Ride returned an invalid ticket response.');
       }
 
-      return Map<String, dynamic>.from(
-        decoded,
-      );
+      return Map<String, dynamic>.from(decoded);
     }
 
-    if (response.statusCode == 401 ||
-        response.statusCode == 403) {
-      throw Exception(
-        'Your Link Ride session is no longer valid.',
-      );
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('Your Link Ride session is no longer valid.');
     }
 
     if (response.statusCode == 400) {
-      String message =
-          fallbackMessage;
+      String message = fallbackMessage;
 
       if (response.body.isNotEmpty) {
         try {
-          final dynamic decoded =
-              jsonDecode(response.body);
+          final dynamic decoded = jsonDecode(response.body);
 
           if (decoded is String) {
             message = decoded;
-          } else if (decoded is Map &&
-              decoded['message'] != null) {
-            message =
-                decoded['message'].toString();
+          } else if (decoded is Map && decoded['message'] != null) {
+            message = decoded['message'].toString();
           }
         } catch (_) {
-          message =
-              response.body;
+          message = response.body;
         }
       }
 
-      throw Exception(
-        message,
-      );
+      throw Exception(message);
     }
 
     throw Exception(

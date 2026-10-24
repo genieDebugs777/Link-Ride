@@ -2,10 +2,9 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-class JourneyPlanService {
-  static const String _baseUrl =
-      'http://10.0.2.2:8080';
+import 'api_config.dart';
 
+class JourneyPlanService {
   Future<List<Map<String, dynamic>>> planJourney({
     required double originLatitude,
     required double originLongitude,
@@ -18,9 +17,7 @@ class JourneyPlanService {
     required bool taxiSelected,
     required bool preferFewerTransfers,
   }) async {
-    final Uri uri = Uri.parse(
-      '$_baseUrl/api/journeys/plan',
-    );
+    final Uri uri = Uri.parse('${ApiConfig.baseUrl}/api/journeys/plan');
 
     final http.Response response = await http.post(
       uri,
@@ -42,21 +39,15 @@ class JourneyPlanService {
     );
 
     if (response.statusCode == 200) {
-      final dynamic decoded =
-          jsonDecode(response.body);
+      final dynamic decoded = jsonDecode(response.body);
 
       if (decoded is! List) {
-        throw Exception(
-          'Unexpected journey-planning response.',
-        );
+        throw Exception('Unexpected journey-planning response.');
       }
 
       return decoded
           .map<Map<String, dynamic>>(
-            (dynamic option) =>
-                Map<String, dynamic>.from(
-              option as Map,
-            ),
+            (dynamic option) => Map<String, dynamic>.from(option as Map),
           )
           .toList();
     }
@@ -65,11 +56,8 @@ class JourneyPlanService {
       return [];
     }
 
-    if (response.statusCode == 401 ||
-        response.statusCode == 403) {
-      throw Exception(
-        'Your Link Ride session has expired.',
-      );
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('Your Link Ride session has expired.');
     }
 
     throw Exception(

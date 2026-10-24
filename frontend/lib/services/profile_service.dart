@@ -9,9 +9,7 @@ class ProfileService {
     required int userId,
     required String token,
   }) async {
-    final Uri url = Uri.parse(
-      '${ApiConfig.baseUrl}/api/users/$userId',
-    );
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/users/$userId');
 
     final http.Response response = await http.get(
       url,
@@ -25,9 +23,7 @@ class ProfileService {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
 
-    throw Exception(
-      'Unable to load profile. Please try again.',
-    );
+    throw Exception('Unable to load profile. Please try again.');
   }
 
   Future<Map<String, dynamic>> updateUserProfile({
@@ -38,9 +34,7 @@ class ProfileService {
     required String email,
     required String phoneNumber,
   }) async {
-    final Uri url = Uri.parse(
-      '${ApiConfig.baseUrl}/api/users/$userId',
-    );
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/users/$userId');
 
     final http.Response response = await http.put(
       url,
@@ -60,9 +54,7 @@ class ProfileService {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
 
-    throw Exception(
-      'Unable to update profile. Please try again.',
-    );
+    throw Exception('Unable to update profile. Please try again.');
   }
 
   Future<void> changePassword({
@@ -70,9 +62,7 @@ class ProfileService {
     required String currentPassword,
     required String newPassword,
   }) async {
-    final Uri url = Uri.parse(
-      '${ApiConfig.baseUrl}/api/users/password',
-    );
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/users/password');
 
     final http.Response response = await http.put(
       url,
