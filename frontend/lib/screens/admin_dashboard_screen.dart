@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/link_ride_theme.dart';
 import 'operator_management_screen.dart';
+import 'admin_disruption_screen.dart';
 import 'user_management_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -81,7 +82,14 @@ class AdminDashboardScreen extends StatelessWidget {
               title: 'Disruption administration',
               description:
                   'Create, review and resolve operational disruptions.',
-              badge: 'Next',
+              badge: 'Open',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AdminDisruptionScreen(),
+                  ),
+                );
+              },
             ),
           ],
         ),
