@@ -8,20 +8,15 @@ class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() =>
-      _ForgotPasswordScreenState();
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState
-    extends State<ForgotPasswordScreen> {
-  final GlobalKey<FormState> _formKey =
-      GlobalKey<FormState>();
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  final AuthService _authService =
-      AuthService();
+  final AuthService _authService = AuthService();
 
-  final TextEditingController emailController =
-      TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
   bool _isSending = false;
 
@@ -32,8 +27,7 @@ class _ForgotPasswordScreenState
   }
 
   String? validateEmail(String? value) {
-    final String email =
-        value?.trim() ?? '';
+    final String email = value?.trim() ?? '';
 
     if (email.isEmpty) {
       return 'Please enter your email address';
@@ -66,52 +60,27 @@ class _ForgotPasswordScreenState
     });
 
     try {
-      final String email =
-          emailController.text.trim();
+      final String email = emailController.text.trim();
 
-      final Map<String, dynamic> response =
-          await _authService.requestPasswordReset(
-        email: email,
-      );
+      final Map<String, dynamic> response = await _authService
+          .requestPasswordReset(email: email);
 
       if (!mounted) {
         return;
       }
 
-      final String? resetCode =
-          response['developmentResetCode']
-              ?.toString();
-
-      if (resetCode == null ||
-          resetCode.isEmpty) {
-        setState(() {
-          _isSending = false;
-        });
-
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
-          SnackBar(
-            content: Text(
-              response['message']
-                      ?.toString() ??
-                  'If that email is linked to a Link Ride account, reset instructions are available.',
-            ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            response['message']?.toString() ?? 'If that email is linked to a Link Ride account, reset instructions have been sent.',
           ),
-        );
+        ),
+      );
 
-        return;
-      }
-
-      final bool? resetCompleted =
-          await Navigator.push<bool>(
+      final bool? resetCompleted = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
-          builder: (context) =>
-              ResetPasswordScreen(
-            email: email,
-            developmentResetCode:
-                resetCode,
-          ),
+          builder: (context) => ResetPasswordScreen(email: email),
         ),
       );
 
@@ -135,17 +104,9 @@ class _ForgotPasswordScreenState
         _isSending = false;
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            error
-                .toString()
-                .replaceFirst(
-                  'Exception: ',
-                  '',
-                ),
-          ),
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
         ),
       );
     }
@@ -154,8 +115,7 @@ class _ForgotPasswordScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-          LinkRideColors.background,
+      backgroundColor: LinkRideColors.background,
       body: Stack(
         children: [
           Positioned(
@@ -163,8 +123,7 @@ class _ForgotPasswordScreenState
             right: -90,
             child: _backgroundCircle(
               size: 250,
-              color:
-                  LinkRideColors.softBlueStrong,
+              color: LinkRideColors.softBlueStrong,
             ),
           ),
           Positioned(
@@ -172,8 +131,7 @@ class _ForgotPasswordScreenState
             left: -100,
             child: _backgroundCircle(
               size: 280,
-              color:
-                  LinkRideColors.softGreenStrong,
+              color: LinkRideColors.softGreenStrong,
             ),
           ),
           SafeArea(
@@ -183,45 +141,27 @@ class _ForgotPasswordScreenState
               },
               child: SingleChildScrollView(
                 keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior
-                        .onDrag,
-                padding:
-                    const EdgeInsets.fromLTRB(
-                  20,
-                  14,
-                  20,
-                  32,
-                ),
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints:
-                        const BoxConstraints(
-                      maxWidth: 430,
-                    ),
+                    constraints: const BoxConstraints(maxWidth: 430),
                     child: Form(
                       key: _formKey,
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment
-                                .stretch,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _topBar(),
 
-                          const SizedBox(
-                            height: 28,
-                          ),
+                          const SizedBox(height: 28),
 
                           _recoveryHeader(),
 
-                          const SizedBox(
-                            height: 28,
-                          ),
+                          const SizedBox(height: 28),
 
                           _recoveryCard(),
 
-                          const SizedBox(
-                            height: 20,
-                          ),
+                          const SizedBox(height: 20),
 
                           _signInPrompt(),
                         ],
@@ -251,27 +191,18 @@ class _ForgotPasswordScreenState
         const Spacer(),
 
         Container(
-          padding:
-              const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 7,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: LinkRideColors.softBlue,
-            borderRadius:
-                BorderRadius.circular(
-              LinkRideRadius.pill,
-            ),
+            borderRadius: BorderRadius.circular(LinkRideRadius.pill),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons
-                    .lock_reset_rounded,
+                Icons.lock_reset_rounded,
                 size: 15,
-                color:
-                    LinkRideColors.primaryBlue,
+                color: LinkRideColors.primaryBlue,
               ),
               SizedBox(width: 6),
               Text(
@@ -279,8 +210,7 @@ class _ForgotPasswordScreenState
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
-                  color:
-                      LinkRideColors.primaryBlue,
+                  color: LinkRideColors.primaryBlue,
                 ),
               ),
             ],
@@ -297,21 +227,15 @@ class _ForgotPasswordScreenState
           width: 88,
           height: 88,
           decoration: BoxDecoration(
-            gradient:
-                LinkRideGradients.primarySoft,
-            borderRadius:
-                BorderRadius.circular(26),
-            border: Border.all(
-              color: LinkRideColors.border,
-            ),
-            boxShadow:
-                LinkRideShadows.soft,
+            gradient: LinkRideGradients.primarySoft,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: LinkRideColors.border),
+            boxShadow: LinkRideShadows.soft,
           ),
           child: const Icon(
             Icons.lock_reset_rounded,
             size: 38,
-            color:
-                LinkRideColors.primaryBlue,
+            color: LinkRideColors.primaryBlue,
           ),
         ),
 
@@ -324,8 +248,7 @@ class _ForgotPasswordScreenState
             fontSize: 29,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.7,
-            color:
-                LinkRideColors.primaryBlue,
+            color: LinkRideColors.primaryBlue,
           ),
         ),
 
@@ -337,8 +260,7 @@ class _ForgotPasswordScreenState
           style: TextStyle(
             fontSize: 14,
             height: 1.5,
-            color:
-                LinkRideColors.textSecondary,
+            color: LinkRideColors.textSecondary,
           ),
         ),
       ],
@@ -350,26 +272,19 @@ class _ForgotPasswordScreenState
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: LinkRideColors.surface,
-        borderRadius:
-            BorderRadius.circular(
-          LinkRideRadius.extraLarge,
-        ),
-        border: Border.all(
-          color: LinkRideColors.border,
-        ),
+        borderRadius: BorderRadius.circular(LinkRideRadius.extraLarge),
+        border: Border.all(color: LinkRideColors.border),
         boxShadow: LinkRideShadows.soft,
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
             'Account email',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color:
-                  LinkRideColors.textPrimary,
+              color: LinkRideColors.textPrimary,
             ),
           ),
 
@@ -380,8 +295,7 @@ class _ForgotPasswordScreenState
             style: TextStyle(
               fontSize: 13,
               height: 1.4,
-              color:
-                  LinkRideColors.textSecondary,
+              color: LinkRideColors.textSecondary,
             ),
           ),
 
@@ -392,8 +306,7 @@ class _ForgotPasswordScreenState
             style: TextStyle(
               fontSize: 13.5,
               fontWeight: FontWeight.w700,
-              color:
-                  LinkRideColors.textPrimary,
+              color: LinkRideColors.textPrimary,
             ),
           ),
 
@@ -402,61 +315,43 @@ class _ForgotPasswordScreenState
           TextFormField(
             controller: emailController,
             validator: validateEmail,
-            keyboardType:
-                TextInputType.emailAddress,
-            textInputAction:
-                TextInputAction.done,
-            autofillHints: const [
-              AutofillHints.email,
-            ],
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.email],
             onFieldSubmitted: (_) {
               sendResetLink();
             },
-            decoration:
-                const InputDecoration(
+            decoration: const InputDecoration(
               hintText: 'name@example.com',
-              prefixIcon: Icon(
-                Icons.mail_outline_rounded,
-              ),
+              prefixIcon: Icon(Icons.mail_outline_rounded),
             ),
           ),
 
           const SizedBox(height: 18),
 
           Container(
-            padding:
-                const EdgeInsets.all(13),
+            padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
-              color:
-                  LinkRideColors.surfaceSoft,
-              borderRadius:
-                  BorderRadius.circular(14),
-              border: Border.all(
-                color:
-                    LinkRideColors.border,
-              ),
+              color: LinkRideColors.surfaceSoft,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: LinkRideColors.border),
             ),
             child: const Row(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
-                  Icons
-                      .info_outline_rounded,
+                  Icons.info_outline_rounded,
                   size: 18,
-                  color:
-                      LinkRideColors.primaryBlue,
+                  color: LinkRideColors.primaryBlue,
                 ),
                 SizedBox(width: 9),
                 Expanded(
                   child: Text(
-                    'For this prototype, the reset code is generated by the Link Ride backend during the recovery flow.',
+                    'We’ll send a one-time reset code to this email address if it is linked to a Link Ride account.',
                     style: TextStyle(
                       fontSize: 12,
                       height: 1.45,
-                      color:
-                          LinkRideColors
-                              .textSecondary,
+                      color: LinkRideColors.textSecondary,
                     ),
                   ),
                 ),
@@ -469,45 +364,26 @@ class _ForgotPasswordScreenState
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed:
-                  _isSending
-                      ? null
-                      : sendResetLink,
+              onPressed: _isSending ? null : sendResetLink,
               child: AnimatedSwitcher(
-                duration:
-                    const Duration(
-                  milliseconds: 180,
-                ),
+                duration: const Duration(milliseconds: 180),
                 child: _isSending
                     ? const SizedBox(
-                        key: ValueKey(
-                          'reset-request-progress',
-                        ),
+                        key: ValueKey('reset-request-progress'),
                         width: 20,
                         height: 20,
-                        child:
-                            CircularProgressIndicator(
+                        child: CircularProgressIndicator(
                           strokeWidth: 2.2,
                           color: Colors.white,
                         ),
                       )
                     : const Row(
-                        key: ValueKey(
-                          'reset-request-label',
-                        ),
-                        mainAxisAlignment:
-                            MainAxisAlignment
-                                .center,
+                        key: ValueKey('reset-request-label'),
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            'Continue',
-                          ),
+                          Text('Continue'),
                           SizedBox(width: 8),
-                          Icon(
-                            Icons
-                                .arrow_forward_rounded,
-                            size: 19,
-                          ),
+                          Icon(Icons.arrow_forward_rounded, size: 19),
                         ],
                       ),
               ),
@@ -520,16 +396,11 @@ class _ForgotPasswordScreenState
 
   Widget _signInPrompt() {
     return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text(
           'Remember your password?',
-          style: TextStyle(
-            fontSize: 13,
-            color:
-                LinkRideColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 13, color: LinkRideColors.textSecondary),
         ),
 
         const SizedBox(width: 5),
@@ -538,20 +409,15 @@ class _ForgotPasswordScreenState
           onTap: () {
             Navigator.pop(context);
           },
-          borderRadius:
-              BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(8),
           child: const Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: 5,
-              vertical: 5,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
             child: Text(
               'Sign In',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
-                color:
-                    LinkRideColors.primaryBlue,
+                color: LinkRideColors.primaryBlue,
               ),
             ),
           ),
@@ -572,41 +438,26 @@ class _ForgotPasswordScreenState
         shape: const CircleBorder(),
         child: InkWell(
           onTap: onTap,
-          customBorder:
-              const CircleBorder(),
+          customBorder: const CircleBorder(),
           child: Container(
             width: 42,
             height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color:
-                    LinkRideColors.border,
-              ),
+              border: Border.all(color: LinkRideColors.border),
             ),
-            child: Icon(
-              icon,
-              size: 21,
-              color:
-                  LinkRideColors.primaryBlue,
-            ),
+            child: Icon(icon, size: 21, color: LinkRideColors.primaryBlue),
           ),
         ),
       ),
     );
   }
 
-  Widget _backgroundCircle({
-    required double size,
-    required Color color,
-  }) {
+  Widget _backgroundCircle({required double size, required Color color}) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }

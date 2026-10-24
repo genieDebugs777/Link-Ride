@@ -30,13 +30,15 @@ public class PasswordResetService {
     private final PasswordResetTokenRepository
             passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
     private final SecureRandom secureRandom =
             new SecureRandom();
 
     public PasswordResetService(
             UserRepository userRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            EmailService emailService) {
 
         this.userRepository =
                 userRepository;
@@ -46,6 +48,9 @@ public class PasswordResetService {
 
         this.passwordEncoder =
                 passwordEncoder;
+
+        this.emailService =
+                emailService;
     }
 
     @Transactional
@@ -59,8 +64,7 @@ public class PasswordResetService {
                 email.isBlank()) {
 
             return new ForgotPasswordResponse(
-                    genericMessage,
-                    null
+                    genericMessage
             );
         }
 
@@ -73,8 +77,7 @@ public class PasswordResetService {
 
         if (user == null) {
             return new ForgotPasswordResponse(
-                    genericMessage,
-                    null
+                    genericMessage
             );
         }
 
@@ -107,20 +110,14 @@ public class PasswordResetService {
         passwordResetTokenRepository.save(
                 token
         );
-
-        /*
-         * PROTOTYPE ONLY:
-         * The raw reset code is returned to the client so the
-         * reset workflow can be demonstrated without SMTP/email.
-         *
-         * Production recommendation:
-         * remove developmentResetCode from the API response and
-         * deliver the one-time reset code/link through a real
-         * email service such as Spring Mail/SMTP.
-         */
-        return new ForgotPasswordResponse(
-                genericMessage,
+        emailService.sendPasswordResetCode(
+                user.getEmail(),
+                user.getFirstName(),
                 resetCode
+        );
+
+        return new ForgotPasswordResponse(
+                genericMessage
         );
     }
 
@@ -241,6 +238,11 @@ public class PasswordResetService {
 
         invalidatePreviousUnusedTokens(
                 user.getUserId()
+        );
+
+        emailService.sendPasswordChangedEmail(
+                user.getEmail(),
+                user.getFirstName()
         );
     }
 

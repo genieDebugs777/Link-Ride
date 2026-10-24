@@ -3,18 +3,14 @@ package za.co.linkride.link_ride_api.dto;
 public class ForgotPasswordResponse {
 
     private String message;
-    private String developmentResetCode;
 
     public ForgotPasswordResponse() {
     }
 
     public ForgotPasswordResponse(
-            String message,
-            String developmentResetCode) {
+            String message) {
 
         this.message = message;
-        this.developmentResetCode =
-                developmentResetCode;
     }
 
     public String getMessage() {
@@ -25,16 +21,5 @@ public class ForgotPasswordResponse {
             String message) {
 
         this.message = message;
-    }
-
-    public String getDevelopmentResetCode() {
-        return developmentResetCode;
-    }
-
-    public void setDevelopmentResetCode(
-            String developmentResetCode) {
-
-        this.developmentResetCode =
-                developmentResetCode;
     }
 }
