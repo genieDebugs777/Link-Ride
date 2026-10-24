@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/link_ride_theme.dart';
+import 'operator_management_screen.dart';
 import 'user_management_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -57,8 +58,15 @@ class AdminDashboardScreen extends StatelessWidget {
               icon: Icons.badge_outlined,
               title: 'Operator management',
               description:
-                  'Administer operator access for transport operations.',
-              badge: 'Next',
+                  'Review operator accounts used for transport operations.',
+              badge: 'Open',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const OperatorManagementScreen(),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
             _managementCard(
