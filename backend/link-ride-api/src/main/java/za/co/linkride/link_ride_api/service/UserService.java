@@ -225,6 +225,40 @@ public class UserService {
         );
     }
 
+
+    // ADMIN - UPDATE USER ROLE
+    public UserResponse updateUserRole(
+            Long userId,
+            Role role) {
+
+        User existingUser = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found with ID: " + userId
+                        )
+                );
+
+        if (existingUser.getRole() == Role.ADMIN) {
+            throw new IllegalArgumentException(
+                    "ADMIN accounts cannot be changed through operator management"
+            );
+        }
+
+        if (role != Role.COMMUTER &&
+                role != Role.OPERATOR) {
+            throw new IllegalArgumentException(
+                    "Operator management only supports COMMUTER and OPERATOR roles"
+            );
+        }
+
+        existingUser.setRole(role);
+
+        User savedUser =
+                userRepository.save(existingUser);
+
+        return toUserResponse(savedUser);
+    }
+
     // DELETE
     public void deleteUser(Long userId) {
 

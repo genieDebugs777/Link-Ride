@@ -16,6 +16,7 @@ import za.co.linkride.link_ride_api.dto.ResendVerificationRequest;
 import za.co.linkride.link_ride_api.dto.ResetPasswordRequest;
 import za.co.linkride.link_ride_api.dto.UserResponse;
 import za.co.linkride.link_ride_api.dto.UserUpdateRequest;
+import za.co.linkride.link_ride_api.dto.UpdateUserRoleRequest;
 import za.co.linkride.link_ride_api.dto.VerifyEmailRequest;
 import za.co.linkride.link_ride_api.dto.VerifyMfaRequest;
 import za.co.linkride.link_ride_api.service.EmailVerificationService;
@@ -244,6 +245,38 @@ public class UserController {
             return ResponseEntity.ok(
                     updatedUser
             );
+
+        } catch (RuntimeException error) {
+
+            return ResponseEntity
+                    .notFound()
+                    .build();
+        }
+    }
+
+
+    // ADMIN - UPDATE USER ROLE
+    @PatchMapping("/{userId}/role")
+    public ResponseEntity<UserResponse> updateUserRole(
+            @PathVariable Long userId,
+            @Valid @RequestBody UpdateUserRoleRequest request) {
+
+        try {
+            UserResponse updatedUser =
+                    userService.updateUserRole(
+                            userId,
+                            request.getRole()
+                    );
+
+            return ResponseEntity.ok(
+                    updatedUser
+            );
+
+        } catch (IllegalArgumentException error) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .build();
 
         } catch (RuntimeException error) {
 

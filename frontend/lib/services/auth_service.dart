@@ -344,4 +344,65 @@ class AuthService {
           'Unable to load users. Server returned ${response.statusCode}.',
     );
   }
+
+  Future<Map<String, dynamic>> updateUserRole({
+    required String token,
+    required int userId,
+    required String role,
+  }) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/users/$userId/role');
+
+    final http.Response response = await http.patch(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'role': role}),
+    );
+
+    Map<String, dynamic> responseData = {};
+
+    if (response.body.trim().isNotEmpty) {
+      try {
+        final dynamic decoded = jsonDecode(response.body);
+
+        if (decoded is Map<String, dynamic>) {
+          responseData = decoded;
+        } else if (decoded is Map) {
+          responseData = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        // Preserve the fallback error below for non-JSON responses.
+      }
+    }
+
+    if (response.statusCode == 200) {
+      return responseData;
+    }
+
+    if (response.statusCode == 400) {
+      throw Exception(
+        responseData['message'] ?? 'This role change is not allowed.',
+      );
+    }
+
+    if (response.statusCode == 401) {
+      throw Exception('Your Link Ride session is no longer valid.');
+    }
+
+    if (response.statusCode == 403) {
+      throw Exception('This account is not allowed to manage operator roles.');
+    }
+
+    if (response.statusCode == 404) {
+      throw Exception('The selected Link Ride user could not be found.');
+    }
+
+    throw Exception(
+      responseData['message'] ??
+          'Unable to update the user role. '
+              'Server returned ${response.statusCode}.',
+    );
+  }
 }

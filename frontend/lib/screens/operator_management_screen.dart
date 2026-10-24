@@ -18,15 +18,18 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
 
   bool _isLoading = true;
   String? _errorMessage;
+  int? _updatingUserId;
+
   List<Map<String, dynamic>> _operators = [];
+  List<Map<String, dynamic>> _commuters = [];
 
   @override
   void initState() {
     super.initState();
-    _loadOperators();
+    _loadAccounts();
   }
 
-  Future<void> _loadOperators() async {
+  Future<void> _loadAccounts() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -50,12 +53,20 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
             (a, b) => _asInt(a['userId']).compareTo(_asInt(b['userId'])),
           );
 
+      final List<Map<String, dynamic>> commuters =
+          users.where((user) {
+            return _text(user['role']).toUpperCase() == 'COMMUTER';
+          }).toList()..sort(
+            (a, b) => _asInt(a['userId']).compareTo(_asInt(b['userId'])),
+          );
+
       if (!mounted) {
         return;
       }
 
       setState(() {
         _operators = operators;
+        _commuters = commuters;
         _isLoading = false;
       });
     } catch (error) {
@@ -67,6 +78,102 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
         _isLoading = false;
         _errorMessage = error.toString().replaceFirst('Exception: ', '');
       });
+    }
+  }
+
+  Future<void> _changeRole({
+    required Map<String, dynamic> user,
+    required String newRole,
+  }) async {
+    final int userId = _asInt(user['userId']);
+    final String fullName = _fullName(user);
+    final bool promoting = newRole == 'OPERATOR';
+
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: Text(
+                promoting ? 'Promote to operator?' : 'Demote to commuter?',
+              ),
+              content: Text(
+                promoting
+                    ? '$fullName will receive operator access and '
+                          'will be able to perform transport operations.'
+                    : '$fullName will lose operator access and '
+                          'return to normal commuter permissions.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: Text(promoting ? 'Promote' : 'Demote'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _updatingUserId = userId;
+      _errorMessage = null;
+    });
+
+    try {
+      final String? token = await _authStorage.getToken();
+
+      if (token == null || token.isEmpty) {
+        throw Exception('Your Link Ride session is no longer valid.');
+      }
+
+      await _authService.updateUserRole(
+        token: token,
+        userId: userId,
+        role: newRole,
+      );
+
+      await _loadAccounts();
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              promoting
+                  ? '$fullName is now an operator.'
+                  : '$fullName is now a commuter.',
+            ),
+          ),
+        );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _updatingUserId = null;
+      });
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
     }
   }
 
@@ -94,8 +201,10 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: _isLoading ? null : _loadOperators,
-            tooltip: 'Refresh operators',
+            onPressed: _isLoading || _updatingUserId != null
+                ? null
+                : _loadAccounts,
+            tooltip: 'Refresh accounts',
             icon: const Icon(
               Icons.refresh_rounded,
               color: LinkRideColors.primaryBlue,
@@ -104,7 +213,7 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadOperators,
+        onRefresh: _loadAccounts,
         color: LinkRideColors.primaryBlue,
         child: _buildBody(),
       ),
@@ -112,7 +221,7 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
   }
 
   Widget _buildBody() {
-    if (_isLoading && _operators.isEmpty) {
+    if (_isLoading && _operators.isEmpty && _commuters.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(24),
@@ -124,7 +233,7 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
           SizedBox(height: 16),
           Center(
             child: Text(
-              'Loading operator accounts...',
+              'Loading operator access...',
               style: TextStyle(
                 color: LinkRideColors.textSecondary,
                 fontWeight: FontWeight.w600,
@@ -135,7 +244,7 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
       );
     }
 
-    if (_errorMessage != null && _operators.isEmpty) {
+    if (_errorMessage != null && _operators.isEmpty && _commuters.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20),
@@ -163,7 +272,7 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
                 ),
                 const SizedBox(height: 14),
                 FilledButton.icon(
-                  onPressed: _loadOperators,
+                  onPressed: _loadAccounts,
                   icon: const Icon(Icons.refresh_rounded),
                   label: const Text('Try again'),
                 ),
@@ -179,53 +288,55 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
       children: [
         _summaryCard(),
-        const SizedBox(height: 18),
-        const Text(
-          'Operator accounts',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: LinkRideColors.textPrimary,
-          ),
+        const SizedBox(height: 20),
+        _sectionHeader(
+          title: 'Current operators',
+          description: 'Accounts that currently have OPERATOR access.',
         ),
-        const SizedBox(height: 5),
-        const Text(
-          'Users with the OPERATOR role returned by the secured ADMIN user endpoint.',
-          style: TextStyle(
-            fontSize: 12.5,
-            height: 1.4,
-            color: LinkRideColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         if (_operators.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: LinkRideDecorations.card(),
-            child: const Column(
-              children: [
-                Icon(
-                  Icons.badge_outlined,
-                  size: 34,
-                  color: LinkRideColors.textSecondary,
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'No operator accounts were returned.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: LinkRideColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+          _emptyCard(
+            icon: Icons.badge_outlined,
+            message: 'No operator accounts were returned.',
           )
         else
           ..._operators.map(
             (operator) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _operatorCard(operator),
+              child: _accountCard(
+                user: operator,
+                roleLabel: 'OPERATOR',
+                actionLabel: 'Demote',
+                actionIcon: Icons.person_remove_alt_1_outlined,
+                onAction: () =>
+                    _changeRole(user: operator, newRole: 'COMMUTER'),
+              ),
+            ),
+          ),
+        const SizedBox(height: 10),
+        _sectionHeader(
+          title: 'Eligible commuters',
+          description:
+              'Promote a commuter when they need transport operator access.',
+        ),
+        const SizedBox(height: 12),
+        if (_commuters.isEmpty)
+          _emptyCard(
+            icon: Icons.people_outline_rounded,
+            message: 'No commuter accounts are available.',
+          )
+        else
+          ..._commuters.map(
+            (commuter) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _accountCard(
+                user: commuter,
+                roleLabel: 'COMMUTER',
+                actionLabel: 'Promote',
+                actionIcon: Icons.person_add_alt_1_rounded,
+                onAction: () =>
+                    _changeRole(user: commuter, newRole: 'OPERATOR'),
+              ),
             ),
           ),
       ],
@@ -233,7 +344,7 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
   }
 
   Widget _summaryCard() {
-    final int activeCount = _operators.where((operator) {
+    final int activeOperators = _operators.where((operator) {
       return _text(operator['accountStatus']).toUpperCase() == 'ACTIVE';
     }).length;
 
@@ -253,7 +364,8 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${_operators.length} operator${_operators.length == 1 ? '' : 's'}',
+                  '${_operators.length} '
+                  'operator${_operators.length == 1 ? '' : 's'}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 21,
@@ -262,7 +374,8 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '$activeCount active operator account${activeCount == 1 ? '' : 's'}',
+                  '$activeOperators active operator '
+                  'account${activeOperators == 1 ? '' : 's'}',
                   style: const TextStyle(color: Colors.white, fontSize: 12.5),
                 ),
               ],
@@ -273,117 +386,187 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
     );
   }
 
-  Widget _operatorCard(Map<String, dynamic> operator) {
-    final int userId = _asInt(operator['userId']);
-    final String firstName = _text(operator['firstName']);
-    final String lastName = _text(operator['lastName']);
-    final String email = _text(operator['email']);
-    final String phone = _text(operator['phoneNumber']);
-    final String status = _text(operator['accountStatus']).toUpperCase();
+  Widget _sectionHeader({required String title, required String description}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: LinkRideColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          description,
+          style: const TextStyle(
+            fontSize: 12.5,
+            height: 1.4,
+            color: LinkRideColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
 
-    final String fullName = '$firstName $lastName'.trim().isEmpty
-        ? 'Unnamed operator'
-        : '$firstName $lastName'.trim();
+  Widget _emptyCard({required IconData icon, required String message}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: LinkRideDecorations.card(),
+      child: Column(
+        children: [
+          Icon(icon, size: 34, color: LinkRideColors.textSecondary),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: LinkRideColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _accountCard({
+    required Map<String, dynamic> user,
+    required String roleLabel,
+    required String actionLabel,
+    required IconData actionIcon,
+    required VoidCallback onAction,
+  }) {
+    final int userId = _asInt(user['userId']);
+    final String email = _text(user['email']);
+    final String phone = _text(user['phoneNumber']);
+    final String status = _text(user['accountStatus']).toUpperCase();
+    final String fullName = _fullName(user);
 
     final bool active = status == 'ACTIVE';
+    final bool updating = _updatingUserId == userId;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: LinkRideDecorations.card(),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: LinkRideColors.softGreen,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.badge_outlined,
-              color: LinkRideColors.linkGreen,
-            ),
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: LinkRideColors.softGreen,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  roleLabel == 'OPERATOR'
+                      ? Icons.badge_outlined
+                      : Icons.person_outline_rounded,
+                  color: LinkRideColors.linkGreen,
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        fullName,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            fullName,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: LinkRideColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? LinkRideColors.softGreen
+                                : LinkRideColors.surfaceSoft,
+                            borderRadius: BorderRadius.circular(
+                              LinkRideRadius.pill,
+                            ),
+                          ),
+                          child: Text(
+                            status.isEmpty ? 'UNKNOWN' : status,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: active
+                                  ? LinkRideColors.linkGreen
+                                  : LinkRideColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      email.isEmpty ? 'No email address' : email,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: LinkRideColors.textSecondary,
+                      ),
+                    ),
+                    if (phone.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        phone,
                         style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: LinkRideColors.textPrimary,
+                          fontSize: 12,
+                          color: LinkRideColors.textSecondary,
                         ),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: active
-                            ? LinkRideColors.softGreen
-                            : LinkRideColors.surfaceSoft,
-                        borderRadius: BorderRadius.circular(
-                          LinkRideRadius.pill,
-                        ),
-                      ),
-                      child: Text(
-                        status.isEmpty ? 'UNKNOWN' : status,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: active
-                              ? LinkRideColors.linkGreen
-                              : LinkRideColors.textSecondary,
-                        ),
-                      ),
-                    ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  email.isEmpty ? 'No email address' : email,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: LinkRideColors.textSecondary,
-                  ),
-                ),
-                if (phone.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    phone,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: LinkRideColors.textSecondary,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 7,
-                  runSpacing: 7,
-                  children: [
-                    _pill(
-                      'OPERATOR',
-                      LinkRideColors.primaryBlue,
-                      LinkRideColors.softBlue,
-                    ),
-                    _pill(
-                      'User #$userId',
-                      LinkRideColors.textSecondary,
-                      LinkRideColors.surfaceSoft,
-                    ),
-                  ],
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 7,
+            runSpacing: 7,
+            children: [
+              _pill(
+                roleLabel,
+                LinkRideColors.primaryBlue,
+                LinkRideColors.softBlue,
+              ),
+              _pill(
+                'User #$userId',
+                LinkRideColors.textSecondary,
+                LinkRideColors.surfaceSoft,
+              ),
+            ],
+          ),
+          const SizedBox(height: 13),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: updating || _updatingUserId != null ? null : onAction,
+              icon: updating
+                  ? const SizedBox(
+                      width: 17,
+                      height: 17,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(actionIcon),
+              label: Text(updating ? 'Updating...' : actionLabel),
             ),
           ),
         ],
@@ -407,6 +590,14 @@ class _OperatorManagementScreenState extends State<OperatorManagementScreen> {
         ),
       ),
     );
+  }
+
+  static String _fullName(Map<String, dynamic> user) {
+    final String firstName = _text(user['firstName']);
+    final String lastName = _text(user['lastName']);
+    final String fullName = '$firstName $lastName'.trim();
+
+    return fullName.isEmpty ? 'Unnamed user' : fullName;
   }
 
   static int _asInt(dynamic value) {

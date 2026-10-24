@@ -91,6 +91,12 @@ public class SecurityConfig {
                                 "/api/users/*"
                         ).hasRole("ADMIN")
 
+
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/users/*/role"
+                        ).hasRole("ADMIN")
+
                         // A user's own profile is checked again in UserController.
                         .requestMatchers(
                                 HttpMethod.GET,
