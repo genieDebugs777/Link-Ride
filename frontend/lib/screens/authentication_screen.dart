@@ -124,9 +124,14 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
       final int userId = authenticatedResponse['user']['userId'] as int;
 
+      final String role =
+          authenticatedResponse['user']['role']?.toString().toUpperCase() ??
+          'COMMUTER';
+
       await _authStorage.saveToken(token);
       await _authStorage.saveFirstName(firstName);
       await _authStorage.saveUserId(userId);
+      await _authStorage.saveRole(role);
 
       if (!mounted) {
         return;
@@ -138,7 +143,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => MainNavigationScreen(firstName: firstName),
+          builder: (context) =>
+              MainNavigationScreen(firstName: firstName, role: role),
         ),
       );
     } catch (error) {

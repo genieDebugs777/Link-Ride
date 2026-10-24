@@ -36,27 +36,20 @@ class _SplashScreenState extends State<SplashScreen>
       curve: Curves.easeOut,
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.94,
-      end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutBack,
-      ),
+    _scaleAnimation = Tween<double>(begin: 0.94, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
     );
 
     _animationController.forward();
 
-    Timer(
-      const Duration(seconds: 3),
-      _handleNavigation,
-    );
+    Timer(const Duration(seconds: 3), _handleNavigation);
   }
 
   Future<void> _handleNavigation() async {
     final String? token = await _authStorage.getToken();
     final String? firstName = await _authStorage.getFirstName();
+
+    final String role = (await _authStorage.getRole()) ?? 'COMMUTER';
 
     if (!mounted) {
       return;
@@ -69,18 +62,14 @@ class _SplashScreenState extends State<SplashScreen>
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => MainNavigationScreen(
-            firstName: firstName,
-          ),
+          builder: (context) =>
+              MainNavigationScreen(firstName: firstName, role: role),
         ),
       );
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) =>
-              const AuthenticationScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const AuthenticationScreen()),
       );
     }
   }
@@ -118,9 +107,7 @@ class _SplashScreenState extends State<SplashScreen>
             left: 32,
             child: _decorativeCircle(
               size: 54,
-              color: LinkRideColors.primaryBlue.withValues(
-                alpha: 0.07,
-              ),
+              color: LinkRideColors.primaryBlue.withValues(alpha: 0.07),
             ),
           ),
           Positioned(
@@ -128,9 +115,7 @@ class _SplashScreenState extends State<SplashScreen>
             right: 28,
             child: _decorativeCircle(
               size: 38,
-              color: LinkRideColors.linkGreen.withValues(
-                alpha: 0.08,
-              ),
+              color: LinkRideColors.linkGreen.withValues(alpha: 0.08),
             ),
           ),
           SafeArea(
@@ -140,9 +125,7 @@ class _SplashScreenState extends State<SplashScreen>
                 child: ScaleTransition(
                   scale: _scaleAnimation,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 36,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 36),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -152,10 +135,8 @@ class _SplashScreenState extends State<SplashScreen>
                           padding: const EdgeInsets.all(22),
                           decoration: BoxDecoration(
                             color: LinkRideColors.surface,
-                            borderRadius:
-                                BorderRadius.circular(36),
-                            boxShadow:
-                                LinkRideShadows.elevated,
+                            borderRadius: BorderRadius.circular(36),
+                            boxShadow: LinkRideShadows.elevated,
                           ),
                           child: Image.asset(
                             'assets/link_ride_logo.png',
@@ -170,8 +151,7 @@ class _SplashScreenState extends State<SplashScreen>
                             fontSize: 30,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.8,
-                            color:
-                                LinkRideColors.primaryBlue,
+                            color: LinkRideColors.primaryBlue,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -181,8 +161,7 @@ class _SplashScreenState extends State<SplashScreen>
                           style: TextStyle(
                             fontSize: 14.5,
                             fontWeight: FontWeight.w600,
-                            color:
-                                LinkRideColors.textSecondary,
+                            color: LinkRideColors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 34),
@@ -191,8 +170,7 @@ class _SplashScreenState extends State<SplashScreen>
                           height: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.4,
-                            color:
-                                LinkRideColors.primaryBlue,
+                            color: LinkRideColors.primaryBlue,
                           ),
                         ),
                       ],
@@ -207,17 +185,11 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Widget _decorativeCircle({
-    required double size,
-    required Color color,
-  }) {
+  Widget _decorativeCircle({required double size, required Color color}) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }
