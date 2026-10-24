@@ -295,4 +295,53 @@ class AuthService {
 
     throw Exception(responseData['message'] ?? 'Unable to reset password.');
   }
+
+  Future<List<Map<String, dynamic>>> getAllUsers({
+    required String token,
+  }) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/users');
+
+    final http.Response response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is List) {
+        return decoded
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+      }
+      throw Exception('Unexpected user list response from the server.');
+    }
+
+    Map<String, dynamic> responseData = {};
+    if (response.body.trim().isNotEmpty) {
+      try {
+        final dynamic decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          responseData = decoded;
+        } else if (decoded is Map) {
+          responseData = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {}
+    }
+
+    if (response.statusCode == 401) {
+      throw Exception('Your Link Ride session is no longer valid.');
+    }
+    if (response.statusCode == 403) {
+      throw Exception('This account is not allowed to view Link Ride users.');
+    }
+
+    throw Exception(
+      responseData['message'] ??
+          'Unable to load users. Server returned ${response.statusCode}.',
+    );
+  }
 }
