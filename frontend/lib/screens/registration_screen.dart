@@ -1,33 +1,38 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../theme/link_ride_theme.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
 
   @override
-  State<RegistrationScreen> createState() => _RegistrationScreenState();
+  State<RegistrationScreen> createState() =>
+      _RegistrationScreenState();
 }
 
-class _RegistrationScreenState extends State<RegistrationScreen> {
-  final _formKey = GlobalKey<FormState>();
+class _RegistrationScreenState
+    extends State<RegistrationScreen> {
+  final GlobalKey<FormState> _formKey =
+      GlobalKey<FormState>();
 
   final AuthService _authService = AuthService();
 
-  final TextEditingController fullNameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController fullNameController =
+      TextEditingController();
+
+  final TextEditingController emailController =
+      TextEditingController();
+
+  final TextEditingController passwordController =
+      TextEditingController();
+
   final TextEditingController confirmPasswordController =
-  TextEditingController();
+      TextEditingController();
 
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
   bool _isCreatingAccount = false;
-
-  static const Color primaryBlue = Color(0xFF003F73);
-  static const Color fieldColour = Color(0xFFF3F5F7);
-  static const Color textPrimary = Color(0xFF17212B);
-  static const Color textSecondary = Color(0xFF667085);
 
   @override
   void dispose() {
@@ -46,7 +51,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final List<String> parts = value
         .trim()
         .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
+        .where(
+          (part) => part.isNotEmpty,
+        )
         .toList();
 
     if (parts.length < 2) {
@@ -57,13 +64,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   String? validateEmail(String? value) {
-    final email = value?.trim() ?? '';
+    final String email = value?.trim() ?? '';
 
     if (email.isEmpty) {
       return 'Please enter your email address';
     }
 
-    final emailPattern = RegExp(
+    final RegExp emailPattern = RegExp(
       r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
     );
 
@@ -113,10 +120,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         fullNameController.text
             .trim()
             .split(RegExp(r'\s+'))
-            .where((part) => part.isNotEmpty)
+            .where(
+              (part) => part.isNotEmpty,
+            )
             .toList();
 
     final String firstName = nameParts.first;
+
     final String lastName =
         nameParts.skip(1).join(' ');
 
@@ -175,358 +185,581 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     }
   }
 
-  InputDecoration fieldDecoration({
-    required String hint,
-    required IconData icon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(
-        color: Color(0xFF98A2B3),
-        fontSize: 14,
-      ),
-      prefixIcon: Icon(
-        icon,
-        size: 20,
-        color: textSecondary,
-      ),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: fieldColour,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 17,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: primaryBlue,
-          width: 1.5,
-        ),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFFD92D20),
-          width: 1.2,
-        ),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFFD92D20),
-          width: 1.5,
-        ),
-      ),
-      errorStyle: const TextStyle(fontSize: 12),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          child: SingleChildScrollView(
-            keyboardDismissBehavior:
-            ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 28,
-              vertical: 18,
+      backgroundColor: LinkRideColors.background,
+      body: Stack(
+        children: [
+          Positioned(
+            top: -110,
+            right: -90,
+            child: _backgroundCircle(
+              size: 260,
+              color: LinkRideColors.softBlueStrong,
             ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 430),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Back button
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            Icons.arrow_back_rounded,
-                            color: primaryBlue,
-                          ),
-                          tooltip: 'Back',
-                        ),
-                      ),
-
-                      // Logo
-                      Center(
-                        child: Image.asset(
-                          'assets/link_ride_logo.png',
-                          width: 210,
-                          height: 105,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      const Text(
-                        'Create your account',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 27,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                          color: primaryBlue,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      const Text(
-                        'Join Link Ride and start connecting your journeys.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.5,
-                          color: textSecondary,
-                        ),
-                      ),
-
-                      const SizedBox(height: 28),
-
-                      const Text(
-                        'Full Name',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: textPrimary,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      TextFormField(
-                        controller: fullNameController,
-                        validator: validateName,
-                        textInputAction: TextInputAction.next,
-                        textCapitalization: TextCapitalization.words,
-                        autofillHints: const [AutofillHints.name],
-                        decoration: fieldDecoration(
-                          hint: 'Enter your full name',
-                          icon: Icons.person_outline_rounded,
-                        ),
-                      ),
-
-                      const SizedBox(height: 18),
-
-                      const Text(
-                        'Email Address',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: textPrimary,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      TextFormField(
-                        controller: emailController,
-                        validator: validateEmail,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const [AutofillHints.email],
-                        decoration: fieldDecoration(
-                          hint: 'Enter your email',
-                          icon: Icons.mail_outline_rounded,
-                        ),
-                      ),
-
-                      const SizedBox(height: 18),
-
-                      const Text(
-                        'Password',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: textPrimary,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      TextFormField(
-                        controller: passwordController,
-                        validator: validatePassword,
-                        obscureText: obscurePassword,
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const [AutofillHints.newPassword],
-                        decoration: fieldDecoration(
-                          hint: 'Create a password',
-                          icon: Icons.lock_outline_rounded,
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                obscurePassword = !obscurePassword;
-                              });
-                            },
-                            icon: Icon(
-                              obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              size: 20,
-                              color: textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      const Text(
-                        'Use at least 8 characters.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF98A2B3),
-                        ),
-                      ),
-
-                      const SizedBox(height: 18),
-
-                      const Text(
-                        'Confirm Password',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: textPrimary,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      TextFormField(
-                        controller: confirmPasswordController,
-                        validator: validateConfirmPassword,
-                        obscureText: obscureConfirmPassword,
-                        textInputAction: TextInputAction.done,
-                        autofillHints: const [AutofillHints.newPassword],
-                        onFieldSubmitted: (_) {
-                          createAccount();
-                        },
-                        decoration: fieldDecoration(
-                          hint: 'Confirm your password',
-                          icon: Icons.lock_outline_rounded,
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                obscureConfirmPassword =
-                                !obscureConfirmPassword;
-                              });
-                            },
-                            icon: Icon(
-                              obscureConfirmPassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              size: 20,
-                              color: textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 26),
-
-                      SizedBox(
-                        height: 54,
-                        child: ElevatedButton(
-                          onPressed: _isCreatingAccount ? null : createAccount,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryBlue,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: _isCreatingAccount
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Create Account',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Icon(
-                                      Icons.arrow_forward_rounded,
-                                      size: 19,
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 22),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+          ),
+          Positioned(
+            bottom: -130,
+            left: -110,
+            child: _backgroundCircle(
+              size: 300,
+              color: LinkRideColors.softGreenStrong,
+            ),
+          ),
+          SafeArea(
+            child: GestureDetector(
+              onTap: () {
+                FocusScope.of(context).unfocus();
+              },
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior
+                        .onDrag,
+                padding: const EdgeInsets.fromLTRB(
+                  20,
+                  14,
+                  20,
+                  32,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(
+                      maxWidth: 430,
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.stretch,
                         children: [
-                          const Text(
-                            'Already have an account? ',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: textSecondary,
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => Navigator.pop(context),
-                            borderRadius: BorderRadius.circular(6),
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 2,
-                                vertical: 4,
-                              ),
-                              child: Text(
-                                'Sign In',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: primaryBlue,
-                                ),
-                              ),
-                            ),
-                          ),
+                          _topBar(),
+
+                          const SizedBox(height: 12),
+
+                          _brandHeader(),
+
+                          const SizedBox(height: 26),
+
+                          _registrationCard(),
+
+                          const SizedBox(height: 20),
+
+                          _signInPrompt(),
                         ],
                       ),
-
-                      const SizedBox(height: 24),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _topBar() {
+    return Row(
+      children: [
+        _circleIconButton(
+          icon: Icons.arrow_back_rounded,
+          tooltip: 'Back',
+          onTap: () {
+            Navigator.pop(context);
+          },
         ),
+
+        const Spacer(),
+
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 7,
+          ),
+          decoration: BoxDecoration(
+            color: LinkRideColors.softBlue,
+            borderRadius:
+                BorderRadius.circular(
+              LinkRideRadius.pill,
+            ),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.person_add_alt_1_rounded,
+                size: 15,
+                color:
+                    LinkRideColors.primaryBlue,
+              ),
+              SizedBox(width: 6),
+              Text(
+                'Create account',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color:
+                      LinkRideColors.primaryBlue,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _brandHeader() {
+    return Column(
+      children: [
+        Container(
+          width: 82,
+          height: 82,
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: LinkRideColors.surface,
+            borderRadius:
+                BorderRadius.circular(24),
+            boxShadow:
+                LinkRideShadows.elevated,
+          ),
+          child: Image.asset(
+            'assets/link_ride_logo.png',
+            fit: BoxFit.contain,
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+        const Text(
+          'Join Link Ride',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 29,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.7,
+            color:
+                LinkRideColors.primaryBlue,
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        const Text(
+          'Create your account and keep every journey, ticket and travel update connected.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            color:
+                LinkRideColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _registrationCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: LinkRideColors.surface,
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.extraLarge,
+        ),
+        border: Border.all(
+          color: LinkRideColors.border,
+        ),
+        boxShadow: LinkRideShadows.soft,
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Your details',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color:
+                  LinkRideColors.textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          const Text(
+            'Use your everyday contact details to create your Link Ride account.',
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color:
+                  LinkRideColors.textSecondary,
+            ),
+          ),
+
+          const SizedBox(height: 22),
+
+          _fieldLabel('Full name'),
+
+          const SizedBox(height: 8),
+
+          TextFormField(
+            controller: fullNameController,
+            validator: validateName,
+            textInputAction:
+                TextInputAction.next,
+            textCapitalization:
+                TextCapitalization.words,
+            autofillHints: const [
+              AutofillHints.name,
+            ],
+            decoration:
+                const InputDecoration(
+              hintText:
+                  'First and last name',
+              prefixIcon: Icon(
+                Icons.person_outline_rounded,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          _fieldLabel('Email address'),
+
+          const SizedBox(height: 8),
+
+          TextFormField(
+            controller: emailController,
+            validator: validateEmail,
+            keyboardType:
+                TextInputType.emailAddress,
+            textInputAction:
+                TextInputAction.next,
+            autofillHints: const [
+              AutofillHints.email,
+            ],
+            decoration:
+                const InputDecoration(
+              hintText: 'name@example.com',
+              prefixIcon: Icon(
+                Icons.mail_outline_rounded,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          _fieldLabel('Password'),
+
+          const SizedBox(height: 8),
+
+          TextFormField(
+            controller: passwordController,
+            validator: validatePassword,
+            obscureText: obscurePassword,
+            textInputAction:
+                TextInputAction.next,
+            autofillHints: const [
+              AutofillHints.newPassword,
+            ],
+            decoration: InputDecoration(
+              hintText: 'Create a password',
+              prefixIcon: const Icon(
+                Icons.lock_outline_rounded,
+              ),
+              suffixIcon: IconButton(
+                tooltip: obscurePassword
+                    ? 'Show password'
+                    : 'Hide password',
+                onPressed: () {
+                  setState(() {
+                    obscurePassword =
+                        !obscurePassword;
+                  });
+                },
+                icon: Icon(
+                  obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons
+                          .visibility_off_outlined,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 9),
+
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
+            decoration: BoxDecoration(
+              color:
+                  LinkRideColors.surfaceSoft,
+              borderRadius:
+                  BorderRadius.circular(12),
+              border: Border.all(
+                color: LinkRideColors.border,
+              ),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons
+                      .verified_user_outlined,
+                  size: 16,
+                  color:
+                      LinkRideColors.linkGreen,
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Use at least 8 characters.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color:
+                          LinkRideColors
+                              .textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          _fieldLabel('Confirm password'),
+
+          const SizedBox(height: 8),
+
+          TextFormField(
+            controller:
+                confirmPasswordController,
+            validator:
+                validateConfirmPassword,
+            obscureText:
+                obscureConfirmPassword,
+            textInputAction:
+                TextInputAction.done,
+            autofillHints: const [
+              AutofillHints.newPassword,
+            ],
+            onFieldSubmitted: (_) {
+              createAccount();
+            },
+            decoration: InputDecoration(
+              hintText:
+                  'Re-enter your password',
+              prefixIcon: const Icon(
+                Icons
+                    .lock_reset_outlined,
+              ),
+              suffixIcon: IconButton(
+                tooltip:
+                    obscureConfirmPassword
+                        ? 'Show password'
+                        : 'Hide password',
+                onPressed: () {
+                  setState(() {
+                    obscureConfirmPassword =
+                        !obscureConfirmPassword;
+                  });
+                },
+                icon: Icon(
+                  obscureConfirmPassword
+                      ? Icons.visibility_outlined
+                      : Icons
+                          .visibility_off_outlined,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 26),
+
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed:
+                  _isCreatingAccount
+                      ? null
+                      : createAccount,
+              child: AnimatedSwitcher(
+                duration:
+                    const Duration(
+                  milliseconds: 180,
+                ),
+                child: _isCreatingAccount
+                    ? const SizedBox(
+                        key: ValueKey(
+                          'register-progress',
+                        ),
+                        width: 20,
+                        height: 20,
+                        child:
+                            CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Row(
+                        key: ValueKey(
+                          'register-label',
+                        ),
+                        mainAxisAlignment:
+                            MainAxisAlignment
+                                .center,
+                        children: [
+                          Text(
+                            'Create Account',
+                          ),
+                          SizedBox(width: 8),
+                          Icon(
+                            Icons
+                                .arrow_forward_rounded,
+                            size: 19,
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          const Row(
+            mainAxisAlignment:
+                MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.lock_outline_rounded,
+                size: 14,
+                color:
+                    LinkRideColors.textMuted,
+              ),
+              SizedBox(width: 6),
+              Text(
+                'Your account details are handled securely',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color:
+                      LinkRideColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _signInPrompt() {
+    return Row(
+      mainAxisAlignment:
+          MainAxisAlignment.center,
+      children: [
+        const Text(
+          'Already have an account?',
+          style: TextStyle(
+            fontSize: 13,
+            color:
+                LinkRideColors.textSecondary,
+          ),
+        ),
+
+        const SizedBox(width: 5),
+
+        InkWell(
+          onTap: () {
+            Navigator.pop(context);
+          },
+          borderRadius:
+              BorderRadius.circular(8),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 5,
+              vertical: 5,
+            ),
+            child: Text(
+              'Sign In',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color:
+                    LinkRideColors.primaryBlue,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _fieldLabel(String label) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 13.5,
+        fontWeight: FontWeight.w700,
+        color:
+            LinkRideColors.textPrimary,
+      ),
+    );
+  }
+
+  Widget _circleIconButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: LinkRideColors.surface,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder:
+              const CircleBorder(),
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color:
+                    LinkRideColors.border,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 21,
+              color:
+                  LinkRideColors.primaryBlue,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _backgroundCircle({
+    required double size,
+    required Color color,
+  }) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
       ),
     );
   }

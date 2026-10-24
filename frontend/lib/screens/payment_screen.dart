@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_storage.dart';
 import '../services/payment_service.dart';
 import '../services/ticket_service.dart';
+import '../theme/link_ride_theme.dart';
 
 class PaymentScreen extends StatefulWidget {
   final Map<String, dynamic> journey;
@@ -19,24 +20,6 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState
     extends State<PaymentScreen> {
-  static const Color primaryBlue =
-      Color(0xFF003F73);
-
-  static const Color linkGreen =
-      Color(0xFF4A9B45);
-
-  static const Color background =
-      Color(0xFFF7F9FB);
-
-  static const Color textPrimary =
-      Color(0xFF17212B);
-
-  static const Color textSecondary =
-      Color(0xFF667085);
-
-  static const Color cardBorder =
-      Color(0xFFE4E9EE);
-
   final AuthStorage _authStorage =
       AuthStorage();
 
@@ -46,16 +29,12 @@ class _PaymentScreenState
   final TicketService _ticketService =
       TicketService();
 
-  String _selectedMethod =
-      'CARD';
+  String _selectedMethod = 'CARD';
 
-  bool _isProcessing =
-      false;
+  bool _isProcessing = false;
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final int journeyId =
         _asInt(
       widget.journey['journeyId'],
@@ -84,271 +63,200 @@ class _PaymentScreenState
     );
 
     return Scaffold(
-      backgroundColor: background,
-
+      backgroundColor:
+          LinkRideColors.background,
       appBar: AppBar(
-        backgroundColor:
-            Colors.white,
-
-        surfaceTintColor:
-            Colors.white,
-
-        elevation: 0,
-
         leading: IconButton(
+          tooltip: 'Back',
           onPressed: () {
-            Navigator.pop(
-              context,
-            );
+            Navigator.pop(context);
           },
-
           icon: const Icon(
             Icons.arrow_back_rounded,
-            color: primaryBlue,
           ),
         ),
-
         title: const Text(
           'Payment',
-
-          style: TextStyle(
-            color: primaryBlue,
-            fontSize: 20,
-            fontWeight:
-                FontWeight.w800,
-          ),
         ),
       ),
-
       body: SafeArea(
-        child:
-            SingleChildScrollView(
+        top: false,
+        child: SingleChildScrollView(
           padding:
               const EdgeInsets.fromLTRB(
             20,
-            18,
+            14,
             20,
             30,
           ),
-
           child: Column(
             crossAxisAlignment:
                 CrossAxisAlignment.start,
-
             children: [
+              _checkoutHeader(
+                cost,
+              ),
+
+              const SizedBox(height: 22),
+
               const Text(
                 'Journey Summary',
-
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 19,
                   fontWeight:
                       FontWeight.w800,
                   color:
-                      textPrimary,
+                      LinkRideColors
+                          .textPrimary,
                 ),
               ),
 
-              const SizedBox(
-                height: 12,
-              ),
+              const SizedBox(height: 12),
 
               _journeySummaryCard(
-                journeyId:
-                    journeyId,
-                origin:
-                    origin,
+                journeyId: journeyId,
+                origin: origin,
                 destination:
                     destination,
-                duration:
-                    duration,
-                cost:
-                    cost,
+                duration: duration,
+                cost: cost,
               ),
 
-              const SizedBox(
-                height: 24,
-              ),
+              const SizedBox(height: 26),
 
               const Text(
                 'Payment Method',
-
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 19,
                   fontWeight:
                       FontWeight.w800,
                   color:
-                      textPrimary,
+                      LinkRideColors
+                          .textPrimary,
                 ),
               ),
 
-              const SizedBox(
-                height: 12,
-              ),
+              const SizedBox(height: 6),
 
-              _paymentMethodCard(
-                value:
-                    'CARD',
-                icon:
-                    Icons.credit_card_rounded,
-                title:
-                    'Card',
-                subtitle:
-                    'Prototype card payment',
-              ),
-
-              const SizedBox(
-                height: 10,
-              ),
-
-              _paymentMethodCard(
-                value:
-                    'WALLET',
-                icon:
-                    Icons.account_balance_wallet_rounded,
-                title:
-                    'Link Ride Wallet',
-                subtitle:
-                    'Prototype wallet option',
-              ),
-
-              const SizedBox(
-                height: 24,
-              ),
-
-              Container(
-                width:
-                    double.infinity,
-
-                padding:
-                    const EdgeInsets.all(
-                  16,
-                ),
-
-                decoration:
-                    BoxDecoration(
+              const Text(
+                'Choose how you want to complete this prototype payment.',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.4,
                   color:
-                      primaryBlue
-                          .withValues(
-                    alpha: 0.05,
-                  ),
-
-                  borderRadius:
-                      BorderRadius
-                          .circular(
-                    18,
-                  ),
+                      LinkRideColors
+                          .textSecondary,
                 ),
+              ),
 
-                child: const Row(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+              const SizedBox(height: 12),
 
+              RadioGroup<String>(
+                groupValue: _selectedMethod,
+                onChanged: (String? value) {
+                  if (value == null) {
+                    return;
+                  }
+
+                  setState(() {
+                    _selectedMethod = value;
+                  });
+                },
+                child: Column(
                   children: [
-                    Icon(
-                      Icons
-                          .info_outline_rounded,
-                      size: 20,
-                      color:
-                          primaryBlue,
+                    _paymentMethodCard(
+                      value: 'CARD',
+                      icon:
+                          Icons.credit_card_rounded,
+                      title: 'Card',
+                      subtitle:
+                          'Prototype card payment',
+                      accent:
+                          LinkRideColors.primaryBlue,
                     ),
 
-                    SizedBox(
-                      width: 10,
-                    ),
+                    const SizedBox(height: 10),
 
-                    Expanded(
-                      child: Text(
-                        'This is a prototype payment flow. No real bank or card transaction is performed.',
-
-                        style:
-                            TextStyle(
-                          fontSize: 12,
-                          height: 1.45,
-                          color:
-                              textSecondary,
-                        ),
-                      ),
+                    _paymentMethodCard(
+                      value: 'WALLET',
+                      icon: Icons
+                          .account_balance_wallet_rounded,
+                      title:
+                          'Link Ride Wallet',
+                      subtitle:
+                          'Prototype wallet option',
+                      accent:
+                          LinkRideColors.linkGreen,
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(
-                height: 24,
-              ),
+              const SizedBox(height: 22),
 
-              SizedBox(
-                width:
-                    double.infinity,
+              _prototypeNotice(),
 
-                height: 50,
+              const SizedBox(height: 24),
 
-                child:
-                    ElevatedButton(
-                  onPressed:
-                      _isProcessing
-                          ? null
-                          : () =>
-                              _processPayment(
-                                journeyId,
-                              ),
-
-                  style:
-                      ElevatedButton
-                          .styleFrom(
-                    backgroundColor:
-                        primaryBlue,
-
-                    foregroundColor:
-                        Colors.white,
-
-                    disabledBackgroundColor:
-                        primaryBlue
-                            .withValues(
-                      alpha: 0.55,
-                    ),
-
-                    elevation: 0,
-
-                    shape:
-                        RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius
-                              .circular(
-                        14,
-                      ),
-                    ),
-                  ),
-
-                  child:
-                      _isProcessing
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-
-                              child:
-                                  CircularProgressIndicator(
-                                strokeWidth: 2.4,
-                                color:
-                                    Colors.white,
-                              ),
-                            )
-                          : Text(
-                              'Pay R${cost.toStringAsFixed(2)}',
-
-                              style:
-                                  const TextStyle(
-                                fontSize: 15,
-                                fontWeight:
-                                    FontWeight
-                                        .w800,
-                              ),
-                            ),
-                ),
+              _payButton(
+                journeyId: journeyId,
+                cost: cost,
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _checkoutHeader(
+    double cost,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration:
+          LinkRideDecorations.blueCard(),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Complete your journey payment',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight:
+                  FontWeight.w600,
+              color: Colors.white
+                  .withValues(alpha: 0.78),
+            ),
+          ),
+
+          const SizedBox(height: 7),
+
+          Text(
+            'R${cost.toStringAsFixed(2)}',
+            style: const TextStyle(
+              fontSize: 30,
+              fontWeight:
+                  FontWeight.w800,
+              letterSpacing: -0.8,
+              color: Colors.white,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            'The amount is based on the selected journey stored by Link Ride.',
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.4,
+              color: Colors.white
+                  .withValues(alpha: 0.74),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -361,122 +269,179 @@ class _PaymentScreenState
     required double cost,
   }) {
     return Container(
-      width:
-          double.infinity,
-
-      padding:
-          const EdgeInsets.all(
-        18,
-      ),
-
+      width: double.infinity,
       decoration:
-          BoxDecoration(
-        color:
-            Colors.white,
-
-        borderRadius:
-            BorderRadius
-                .circular(
-          20,
-        ),
-
-        border:
-            Border.all(
-          color:
-              cardBorder,
-        ),
-      ),
-
+          LinkRideDecorations.card(),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-
         children: [
-          Text(
-            'Journey #$journeyId',
-
-            style:
-                const TextStyle(
-              fontSize: 15,
-              fontWeight:
-                  FontWeight.w800,
-              color:
-                  textPrimary,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(
+              16,
+              15,
+              16,
+              14,
             ),
-          ),
+            decoration: BoxDecoration(
+              color:
+                  LinkRideColors.softBlue,
+              borderRadius:
+                  const BorderRadius.vertical(
+                top: Radius.circular(
+                  LinkRideRadius.large,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration:
+                      const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.route_rounded,
+                    size: 20,
+                    color:
+                        LinkRideColors
+                            .primaryBlue,
+                  ),
+                ),
 
-          const SizedBox(
-            height: 16,
-          ),
+                const SizedBox(width: 11),
 
-          _locationRow(
-            icon:
-                Icons.trip_origin_rounded,
-            color:
-                linkGreen,
-            text:
-                origin,
+                Expanded(
+                  child: Text(
+                    'Journey #$journeyId',
+                    style:
+                        const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight:
+                          FontWeight.w800,
+                      color:
+                          LinkRideColors
+                              .textPrimary,
+                    ),
+                  ),
+                ),
+
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration:
+                      BoxDecoration(
+                    color:
+                        LinkRideColors
+                            .primaryBlue
+                            .withValues(
+                      alpha: 0.09,
+                    ),
+                    borderRadius:
+                        BorderRadius.circular(
+                      LinkRideRadius.pill,
+                    ),
+                  ),
+                  child: const Text(
+                    'CHECKOUT',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight:
+                          FontWeight.w800,
+                      letterSpacing: 0.4,
+                      color:
+                          LinkRideColors
+                              .primaryBlue,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
 
           Padding(
-            padding:
-                const EdgeInsets.only(
-              left: 7,
+            padding: const EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              16,
             ),
+            child: Column(
+              children: [
+                _locationRow(
+                  icon: Icons
+                      .trip_origin_rounded,
+                  color:
+                      LinkRideColors.linkGreen,
+                  label: 'FROM',
+                  text: origin,
+                ),
 
-            child: Container(
-              width: 2,
-              height: 18,
-              color:
-                  cardBorder,
+                Padding(
+                  padding:
+                      const EdgeInsets.only(
+                    left: 16,
+                  ),
+                  child: Align(
+                    alignment:
+                        Alignment.centerLeft,
+                    child: Container(
+                      width: 2,
+                      height: 18,
+                      color:
+                          LinkRideColors
+                              .borderStrong,
+                    ),
+                  ),
+                ),
+
+                _locationRow(
+                  icon: Icons
+                      .location_on_rounded,
+                  color:
+                      LinkRideColors.primaryBlue,
+                  label: 'TO',
+                  text: destination,
+                ),
+
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _metricCard(
+                        icon: Icons
+                            .schedule_rounded,
+                        label: 'Duration',
+                        value:
+                            '$duration min',
+                        accent:
+                            LinkRideColors.primaryBlue,
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    Expanded(
+                      child: _metricCard(
+                        icon: Icons
+                            .payments_outlined,
+                        label: 'Total',
+                        value:
+                            'R${cost.toStringAsFixed(2)}',
+                        accent:
+                            LinkRideColors.linkGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ),
-
-          _locationRow(
-            icon:
-                Icons.location_on_rounded,
-            color:
-                primaryBlue,
-            text:
-                destination,
-          ),
-
-          const SizedBox(
-            height: 16,
-          ),
-
-          const Divider(
-            height: 1,
-            color:
-                cardBorder,
-          ),
-
-          const SizedBox(
-            height: 14,
-          ),
-
-          Row(
-            children: [
-              Expanded(
-                child: _metric(
-                  icon:
-                      Icons
-                          .schedule_rounded,
-                  value:
-                      '$duration min',
-                ),
-              ),
-
-              Expanded(
-                child: _metric(
-                  icon:
-                      Icons
-                          .payments_outlined,
-                  value:
-                      'R${cost.toStringAsFixed(2)}',
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -488,147 +453,112 @@ class _PaymentScreenState
     required IconData icon,
     required String title,
     required String subtitle,
+    required Color accent,
   }) {
     final bool selected =
-        _selectedMethod ==
-            value;
+        _selectedMethod == value;
 
     return Material(
-      color:
-          Colors.transparent,
-
+      color: Colors.transparent,
       child: InkWell(
         onTap: () {
           setState(() {
-            _selectedMethod =
-                value;
+            _selectedMethod = value;
           });
         },
-
         borderRadius:
-            BorderRadius
-                .circular(
-          18,
+            BorderRadius.circular(
+          LinkRideRadius.large,
         ),
-
         child: Ink(
           padding:
-              const EdgeInsets.all(
-            16,
-          ),
-
-          decoration:
-              BoxDecoration(
-            color:
-                Colors.white,
-
+              const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: selected
+                ? accent.withValues(
+                    alpha: 0.055,
+                  )
+                : LinkRideColors.surface,
             borderRadius:
-                BorderRadius
-                    .circular(
-              18,
+                BorderRadius.circular(
+              LinkRideRadius.large,
             ),
-
-            border:
-                Border.all(
-              color:
-                  selected
-                      ? primaryBlue
-                      : cardBorder,
+            border: Border.all(
+              color: selected
+                  ? accent.withValues(
+                      alpha: 0.32,
+                    )
+                  : LinkRideColors.border,
               width:
-                  selected
-                      ? 1.5
-                      : 1,
+                  selected ? 1.3 : 1,
             ),
+            boxShadow:
+                selected
+                    ? LinkRideShadows.soft
+                    : const [],
           ),
-
           child: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
-
+                width: 46,
+                height: 46,
                 decoration:
                     BoxDecoration(
                   color:
-                      primaryBlue
-                          .withValues(
-                    alpha: 0.08,
+                      accent.withValues(
+                    alpha: 0.10,
                   ),
-
                   borderRadius:
-                      BorderRadius
-                          .circular(
-                    13,
+                      BorderRadius.circular(
+                    14,
                   ),
                 ),
-
                 child: Icon(
                   icon,
-                  color:
-                      primaryBlue,
+                  color: accent,
+                  size: 22,
                 ),
               ),
 
-              const SizedBox(
-                width: 13,
-              ),
+              const SizedBox(width: 13),
 
               Expanded(
                 child: Column(
                   crossAxisAlignment:
-                      CrossAxisAlignment
-                          .start,
-
+                      CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-
                       style:
                           const TextStyle(
                         fontSize: 14,
                         fontWeight:
-                            FontWeight
-                                .w700,
+                            FontWeight.w800,
                         color:
-                            textPrimary,
+                            LinkRideColors
+                                .textPrimary,
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 3,
-                    ),
+                    const SizedBox(height: 3),
 
                     Text(
                       subtitle,
-
                       style:
                           const TextStyle(
                         fontSize: 11.5,
                         color:
-                            textSecondary,
+                            LinkRideColors
+                                .textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              RadioGroup<String>(
-                groupValue: _selectedMethod,
-
-                onChanged: (String? newValue) {
-                  if (newValue == null) {
-                    return;
-                  }
-
-                  setState(() {
-                    _selectedMethod = newValue;
-                  });
-                },
-
-                child: Radio<String>(
-                    value: value,
-                    activeColor: primaryBlue,
-                ),
+              Radio<String>(
+                value: value,
+                activeColor: accent,
               ),
             ],
           ),
@@ -637,90 +567,303 @@ class _PaymentScreenState
     );
   }
 
+  Widget _prototypeNotice() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color:
+            LinkRideColors.warningSoft,
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.medium,
+        ),
+        border: Border.all(
+          color:
+              LinkRideColors.warning
+                  .withValues(
+            alpha: 0.18,
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration:
+                BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons
+                  .science_outlined,
+              size: 20,
+              color:
+                  LinkRideColors.warning,
+            ),
+          ),
+
+          SizedBox(width: 11),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Prototype payment',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
+                ),
+
+                SizedBox(height: 4),
+
+                Text(
+                  'No real bank, wallet or card transaction is performed. This flow demonstrates the Link Ride payment lifecycle only.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _payButton({
+    required int journeyId,
+    required double cost,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: _isProcessing
+            ? null
+            : () {
+                _processPayment(
+                  journeyId,
+                );
+              },
+        child: AnimatedSwitcher(
+          duration:
+              const Duration(
+            milliseconds: 180,
+          ),
+          child: _isProcessing
+              ? const Row(
+                  key: ValueKey(
+                    'payment-progress',
+                  ),
+                  mainAxisAlignment:
+                      MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 19,
+                      height: 19,
+                      child:
+                          CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 9),
+                    Text(
+                      'Processing payment...',
+                    ),
+                  ],
+                )
+              : Row(
+                  key: const ValueKey(
+                    'payment-label',
+                  ),
+                  mainAxisAlignment:
+                      MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons
+                          .lock_outline_rounded,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Pay R${cost.toStringAsFixed(2)}',
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
   Widget _locationRow({
     required IconData icon,
     required Color color,
+    required String label,
     required String text,
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 17,
-          color:
-              color,
+        Container(
+          width: 34,
+          height: 34,
+          decoration:
+              BoxDecoration(
+            color: color.withValues(
+              alpha: 0.09,
+            ),
+            shape:
+                BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            size: 17,
+            color: color,
+          ),
         ),
 
-        const SizedBox(
-          width: 8,
-        ),
+        const SizedBox(width: 10),
 
         Expanded(
-          child: Text(
-            text,
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style:
+                    const TextStyle(
+                  fontSize: 9.5,
+                  fontWeight:
+                      FontWeight.w800,
+                  letterSpacing: 0.7,
+                  color:
+                      LinkRideColors
+                          .textMuted,
+                ),
+              ),
 
-            style:
-                const TextStyle(
-              fontSize: 13,
-              fontWeight:
-                  FontWeight.w700,
-              color:
-                  textPrimary,
-            ),
+              const SizedBox(height: 2),
+
+              Text(
+                text,
+                style:
+                    const TextStyle(
+                  fontSize: 13,
+                  fontWeight:
+                      FontWeight.w700,
+                  color:
+                      LinkRideColors
+                          .textPrimary,
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _metric({
+  Widget _metricCard({
     required IconData icon,
+    required String label,
     required String value,
+    required Color accent,
   }) {
-    return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.center,
-
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color:
-              primaryBlue,
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 11,
+      ),
+      decoration: BoxDecoration(
+        color: accent.withValues(
+          alpha: 0.055,
         ),
-
-        const SizedBox(
-          width: 6,
-        ),
-
-        Text(
-          value,
-
-          style:
-              const TextStyle(
-            fontSize: 12.5,
-            fontWeight:
-                FontWeight.w700,
-            color:
-                textPrimary,
+        borderRadius:
+            BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 17,
+            color: accent,
           ),
-        ),
-      ],
+
+          const SizedBox(width: 8),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style:
+                      const TextStyle(
+                    fontSize: 10.5,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+
+                const SizedBox(height: 2),
+
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow:
+                      TextOverflow.ellipsis,
+                  style:
+                      const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Future<void> _processPayment(
     int journeyId,
   ) async {
+    if (_isProcessing) {
+      return;
+    }
+
     setState(() {
-      _isProcessing =
-          true;
+      _isProcessing = true;
     });
 
     try {
       final String? token =
-          await _authStorage
-              .getToken();
+          await _authStorage.getToken();
 
       if (token == null ||
           token.isEmpty) {
@@ -729,14 +872,11 @@ class _PaymentScreenState
         );
       }
 
-      final Map<String, dynamic>
-          payment =
+      final Map<String, dynamic> payment =
           await _paymentService
               .processPayment(
-        token:
-            token,
-        journeyId:
-            journeyId,
+        token: token,
+        journeyId: journeyId,
         paymentMethod:
             _selectedMethod,
       );
@@ -746,8 +886,7 @@ class _PaymentScreenState
       }
 
       final String reference =
-          payment[
-                      'transactionReference']
+          payment['transactionReference']
                   ?.toString() ??
               'Unavailable';
 
@@ -771,52 +910,52 @@ class _PaymentScreenState
       }
 
       await showDialog<void>(
-        context:
-            context,
-
-        barrierDismissible:
-            false,
-
+        context: context,
+        barrierDismissible: false,
         builder:
-            (BuildContext context) {
+            (BuildContext dialogContext) {
           return AlertDialog(
-            icon:
-                const Icon(
-              Icons
-                  .check_circle_rounded,
-              color:
-                  linkGreen,
-              size: 46,
+            icon: Container(
+              width: 62,
+              height: 62,
+              decoration:
+                  const BoxDecoration(
+                color:
+                    LinkRideColors
+                        .softGreen,
+                shape:
+                    BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                size: 31,
+                color:
+                    LinkRideColors
+                        .linkGreen,
+              ),
             ),
-
-            title:
-                const Text(
+            title: const Text(
               'Payment successful',
+              textAlign:
+                  TextAlign.center,
             ),
-
-            content:
-                Text(
+            content: Text(
               ticketIssued
                   ? 'Your journey has been paid successfully and your digital ticket is ready.\n\nReference: $reference'
                   : 'Your journey has been paid successfully. Your ticket could not be prepared automatically, but you can open the journey and continue to the ticket.\n\nReference: $reference',
+              textAlign:
+                  TextAlign.center,
             ),
-
+            actionsAlignment:
+                MainAxisAlignment.center,
             actions: [
               FilledButton(
                 onPressed: () {
                   Navigator.pop(
-                    context,
+                    dialogContext,
                   );
                 },
-
-                style:
-                    FilledButton.styleFrom(
-                  backgroundColor:
-                      primaryBlue,
-                ),
-
-                child:
-                    const Text(
+                child: const Text(
                   'Continue',
                 ),
               ),
@@ -838,9 +977,8 @@ class _PaymentScreenState
         return;
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           content: Text(
             error
@@ -855,8 +993,7 @@ class _PaymentScreenState
     } finally {
       if (mounted) {
         setState(() {
-          _isProcessing =
-              false;
+          _isProcessing = false;
         });
       }
     }

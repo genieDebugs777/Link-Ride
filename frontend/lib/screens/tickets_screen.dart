@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_storage.dart';
 import '../services/my_journeys_service.dart';
 import '../services/ticket_service.dart';
+import '../theme/link_ride_theme.dart';
 import 'my_journeys_screen.dart';
 import 'ticket_screen.dart';
 
@@ -20,15 +21,12 @@ class TicketsScreen extends StatefulWidget {
 }
 
 class _TicketsScreenState extends State<TicketsScreen> {
-  static const Color primaryBlue = Color(0xFF003F73);
-  static const Color linkGreen = Color(0xFF4A9B45);
-  static const Color background = Color(0xFFF7F9FB);
-  static const Color textPrimary = Color(0xFF17212B);
-  static const Color textSecondary = Color(0xFF667085);
-  static const Color cardBorder = Color(0xFFE4E9EE);
+  final AuthStorage _authStorage =
+      AuthStorage();
 
-  final AuthStorage _authStorage = AuthStorage();
-  final TicketService _ticketService = TicketService();
+  final TicketService _ticketService =
+      TicketService();
+
   final MyJourneysService _myJourneysService =
       MyJourneysService();
 
@@ -49,9 +47,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
   void didUpdateWidget(
     covariant TicketsScreen oldWidget,
   ) {
-    super.didUpdateWidget(
-      oldWidget,
-    );
+    super.didUpdateWidget(oldWidget);
 
     if (oldWidget.refreshToken !=
         widget.refreshToken) {
@@ -66,7 +62,8 @@ class _TicketsScreenState extends State<TicketsScreen> {
     });
 
     try {
-      final String? token = await _authStorage.getToken();
+      final String? token =
+          await _authStorage.getToken();
 
       if (token == null || token.isEmpty) {
         throw Exception(
@@ -118,6 +115,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
 
       setState(() {
         _isLoading = false;
+
         _errorMessage = error
             .toString()
             .replaceFirst(
@@ -161,6 +159,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
           ),
         ),
       );
+
       return;
     }
 
@@ -203,11 +202,14 @@ class _TicketsScreenState extends State<TicketsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor:
+          LinkRideColors.background,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
           onRefresh: _loadTickets,
+          color:
+              LinkRideColors.primaryBlue,
           child: ListView(
             physics:
                 const AlwaysScrollableScrollPhysics(),
@@ -219,57 +221,73 @@ class _TicketsScreenState extends State<TicketsScreen> {
               30,
             ),
             children: [
-              const Text(
-                'Tickets',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.6,
-                  color: primaryBlue,
-                ),
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                'Manage your current and previous Link Ride tickets.',
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.4,
-                  color: textSecondary,
-                ),
-              ),
-              const SizedBox(height: 22),
+              _header(),
+
+              const SizedBox(height: 24),
+
               const Text(
                 'Current Ticket',
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: textPrimary,
+                  fontSize: 19,
+                  fontWeight:
+                      FontWeight.w800,
+                  letterSpacing: -0.2,
+                  color:
+                      LinkRideColors
+                          .textPrimary,
                 ),
               ),
+
               const SizedBox(height: 12),
+
               if (_isLoading)
                 _loadingCard()
               else if (_errorMessage != null)
                 _errorCard()
               else
                 _currentTicketSection(),
-              const SizedBox(height: 24),
+
+              const SizedBox(height: 28),
+
               const Text(
                 'Ticket Management',
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: textPrimary,
+                  fontSize: 19,
+                  fontWeight:
+                      FontWeight.w800,
+                  letterSpacing: -0.2,
+                  color:
+                      LinkRideColors
+                          .textPrimary,
                 ),
               ),
-              const SizedBox(height: 12),
+
+              const SizedBox(height: 6),
+
+              const Text(
+                'Review your full ticket history and completed travel passes.',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.4,
+                  color:
+                      LinkRideColors
+                          .textSecondary,
+                ),
+              ),
+
+              const SizedBox(height: 13),
+
               _managementCard(
-                icon: Icons.confirmation_number_outlined,
+                icon:
+                    Icons.confirmation_number_outlined,
                 title: 'All Tickets',
                 subtitle:
-                    'View issued, active and used tickets',
+                    'Issued, active and used tickets',
+                accent:
+                    LinkRideColors.primaryBlue,
                 onTap:
-                    _isLoading || _errorMessage != null
+                    _isLoading ||
+                            _errorMessage != null
                         ? null
                         : () {
                             _openTicketList(
@@ -277,14 +295,19 @@ class _TicketsScreenState extends State<TicketsScreen> {
                             );
                           },
               ),
+
               const SizedBox(height: 10),
+
               _managementCard(
                 icon: Icons.history_rounded,
                 title: 'Used Tickets',
                 subtitle:
-                    'View tickets from completed journeys',
+                    'Tickets from completed journeys',
+                accent:
+                    LinkRideColors.linkGreen,
                 onTap:
-                    _isLoading || _errorMessage != null
+                    _isLoading ||
+                            _errorMessage != null
                         ? null
                         : () {
                             _openTicketList(
@@ -292,46 +315,45 @@ class _TicketsScreenState extends State<TicketsScreen> {
                             );
                           },
               ),
+
               const SizedBox(height: 24),
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color:
-                      primaryBlue.withValues(
-                    alpha: 0.05,
-                  ),
-                  borderRadius:
-                      BorderRadius.circular(18),
-                ),
-                child: const Row(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      size: 20,
-                      color: primaryBlue,
-                    ),
-                    SizedBox(width: 11),
-                    Expanded(
-                      child: Text(
-                        'Your current ticket is the ticket ready for use or already active. Used tickets remain available in your ticket history.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.45,
-                          color: textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+
+              _ticketInformation(),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _header() {
+    return const Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tickets',
+          style: TextStyle(
+            fontSize: 29,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.7,
+            color:
+                LinkRideColors.primaryBlue,
+          ),
+        ),
+
+        SizedBox(height: 5),
+
+        Text(
+          'Manage your current and previous Link Ride tickets.',
+          style: TextStyle(
+            fontSize: 13.5,
+            height: 1.4,
+            color:
+                LinkRideColors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 
@@ -340,76 +362,16 @@ class _TicketsScreenState extends State<TicketsScreen> {
         _currentTicket;
 
     if (ticket == null) {
-      return Container(
-        width: double.infinity,
-        padding:
-            const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius:
-              BorderRadius.circular(20),
-          border: Border.all(
-            color: cardBorder,
-          ),
-        ),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.confirmation_number_outlined,
-              size: 42,
-              color: primaryBlue,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'No current ticket',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: textPrimary,
-              ),
-            ),
-            const SizedBox(height: 5),
-            const Text(
-              'Choose a journey and complete payment to receive a Link Ride digital ticket.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12.5,
-                height: 1.4,
-                color: textSecondary,
-              ),
-            ),
-            const SizedBox(height: 14),
-            OutlinedButton.icon(
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        const MyJourneysScreen(),
-                  ),
-                );
-
-                if (mounted) {
-                  await _loadTickets();
-                }
-              },
-              icon: const Icon(
-                Icons.route_rounded,
-              ),
-              label: const Text(
-                'View My Journeys',
-              ),
-            ),
-          ],
-        ),
-      );
+      return _emptyCurrentTicket();
     }
 
     final Map<String, dynamic>? journey =
         _journeyForTicket(ticket);
 
     final int ticketId =
-        _asInt(ticket['ticketId']);
+        _asInt(
+      ticket['ticketId'],
+    );
 
     final String status =
         ticket['ticketStatus']
@@ -436,155 +398,331 @@ class _TicketsScreenState extends State<TicketsScreen> {
       journey?['estimatedCost'],
     );
 
+    final Color statusColor =
+        _statusColor(status);
+
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            LinkRideColors.surface,
         borderRadius:
-            BorderRadius.circular(22),
-        border: Border.all(
-          color: cardBorder,
+            BorderRadius.circular(
+          LinkRideRadius.extraLarge,
         ),
-        boxShadow: [
-          BoxShadow(
-            color:
-                Colors.black.withValues(
-              alpha: 0.025,
-            ),
-            blurRadius: 16,
-            offset:
-                const Offset(0, 6),
-          ),
-        ],
+        border: Border.all(
+          color:
+              LinkRideColors.border,
+        ),
+        boxShadow:
+            LinkRideShadows.elevated,
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color:
-                      primaryBlue.withValues(
-                    alpha: 0.08,
-                  ),
-                  borderRadius:
-                      BorderRadius.circular(13),
-                ),
-                child: const Icon(
-                  Icons.confirmation_number_rounded,
-                  color: primaryBlue,
+          Container(
+            width: double.infinity,
+            padding:
+                const EdgeInsets.fromLTRB(
+              18,
+              17,
+              18,
+              16,
+            ),
+            decoration:
+                BoxDecoration(
+              color:
+                  statusColor.withValues(
+                alpha: 0.06,
+              ),
+              borderRadius:
+                  const BorderRadius.vertical(
+                top: Radius.circular(
+                  LinkRideRadius.extraLarge,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration:
+                      BoxDecoration(
+                    color:
+                        statusColor.withValues(
+                      alpha: 0.11,
+                    ),
+                    borderRadius:
+                        BorderRadius.circular(
+                      14,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons
+                        .confirmation_number_rounded,
+                    size: 23,
+                    color: statusColor,
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ticket #$ticketId',
+                        style:
+                            const TextStyle(
+                          fontSize: 15.5,
+                          fontWeight:
+                              FontWeight.w800,
+                          color:
+                              LinkRideColors
+                                  .textPrimary,
+                        ),
+                      ),
+
+                      const SizedBox(height: 3),
+
+                      Text(
+                        ticketCode,
+                        maxLines: 1,
+                        overflow:
+                            TextOverflow.ellipsis,
+                        style:
+                            const TextStyle(
+                          fontSize: 11.5,
+                          color:
+                              LinkRideColors
+                                  .textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                _statusChip(status),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding:
+                const EdgeInsets.fromLTRB(
+              18,
+              18,
+              18,
+              18,
+            ),
+            child: Column(
+              children: [
+                _ticketRoute(
+                  origin: origin,
+                  destination:
+                      destination,
+                ),
+
+                const SizedBox(height: 16),
+
+                Row(
                   children: [
-                    Text(
-                      'Ticket #$ticketId',
-                      style:
-                          const TextStyle(
-                        fontSize: 15,
-                        fontWeight:
-                            FontWeight.w800,
-                        color: textPrimary,
+                    Expanded(
+                      child: _metricCard(
+                        icon:
+                            Icons.route_rounded,
+                        label: 'Journey',
+                        value:
+                            '#${_asInt(ticket['journeyId'])}',
+                        accent:
+                            LinkRideColors.primaryBlue,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      ticketCode,
-                      overflow:
-                          TextOverflow.ellipsis,
-                      style:
-                          const TextStyle(
-                        fontSize: 11.5,
-                        color: textSecondary,
+
+                    const SizedBox(width: 10),
+
+                    Expanded(
+                      child: _metricCard(
+                        icon:
+                            Icons.payments_outlined,
+                        label: 'Fare',
+                        value:
+                            'R${cost.toStringAsFixed(2)}',
+                        accent:
+                            LinkRideColors.linkGreen,
                       ),
                     ),
                   ],
                 ),
-              ),
-              _statusChip(status),
-            ],
+
+                const SizedBox(height: 17),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      _openTicket(ticket);
+                    },
+                    icon: const Icon(
+                      Icons
+                          .confirmation_number_outlined,
+                      size: 18,
+                    ),
+                    label: const Text(
+                      'View Ticket',
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyCurrentTicket() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(24),
+      decoration:
+          LinkRideDecorations.card(),
+      child: Column(
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration:
+                const BoxDecoration(
+              color:
+                  LinkRideColors.softBlue,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons
+                  .confirmation_number_outlined,
+              size: 32,
+              color:
+                  LinkRideColors
+                      .primaryBlue,
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          const Text(
+            'No current ticket',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight:
+                  FontWeight.w800,
+              color:
+                  LinkRideColors
+                      .textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          const Text(
+            'Choose a journey and complete payment to receive your Link Ride digital ticket.',
+            textAlign:
+                TextAlign.center,
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.45,
+              color:
+                  LinkRideColors
+                      .textSecondary,
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          OutlinedButton.icon(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const MyJourneysScreen(),
+                ),
+              );
+
+              if (mounted) {
+                await _loadTickets();
+              }
+            },
+            icon: const Icon(
+              Icons.route_rounded,
+              size: 18,
+            ),
+            label: const Text(
+              'View My Journeys',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ticketRoute({
+    required String origin,
+    required String destination,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color:
+            LinkRideColors.surfaceSoft,
+        borderRadius:
+            BorderRadius.circular(16),
+        border: Border.all(
+          color:
+              LinkRideColors.border,
+        ),
+      ),
+      child: Column(
+        children: [
           _locationRow(
-            icon: Icons.trip_origin_rounded,
-            color: linkGreen,
+            icon:
+                Icons.trip_origin_rounded,
+            color:
+                LinkRideColors.linkGreen,
+            label: 'FROM',
             text: origin,
           ),
+
           Padding(
             padding:
                 const EdgeInsets.only(
-              left: 7,
+              left: 15,
             ),
-            child: Container(
-              width: 2,
-              height: 18,
-              color: cardBorder,
+            child: Align(
+              alignment:
+                  Alignment.centerLeft,
+              child: Container(
+                width: 2,
+                height: 18,
+                color:
+                    LinkRideColors
+                        .borderStrong,
+              ),
             ),
           ),
+
           _locationRow(
-            icon: Icons.location_on_rounded,
-            color: primaryBlue,
+            icon:
+                Icons.location_on_rounded,
+            color:
+                LinkRideColors.primaryBlue,
+            label: 'TO',
             text: destination,
-          ),
-          const SizedBox(height: 16),
-          const Divider(
-            height: 1,
-            color: cardBorder,
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _metric(
-                  icon: Icons.route_rounded,
-                  value:
-                      'Journey #${_asInt(ticket['journeyId'])}',
-                ),
-              ),
-              Expanded(
-                child: _metric(
-                  icon: Icons.payments_outlined,
-                  value:
-                      'R${cost.toStringAsFixed(2)}',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: ElevatedButton(
-              onPressed: () {
-                _openTicket(ticket);
-              },
-              style:
-                  ElevatedButton.styleFrom(
-                backgroundColor:
-                    primaryBlue,
-                foregroundColor:
-                    Colors.white,
-                elevation: 0,
-                shape:
-                    RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(14),
-                ),
-              ),
-              child: const Text(
-                'View Ticket',
-              ),
-            ),
           ),
         ],
       ),
@@ -595,6 +733,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
     required IconData icon,
     required String title,
     required String subtitle,
+    required Color accent,
     required VoidCallback? onTap,
   }) {
     return Material(
@@ -602,38 +741,51 @@ class _TicketsScreenState extends State<TicketsScreen> {
       child: InkWell(
         onTap: onTap,
         borderRadius:
-            BorderRadius.circular(18),
+            BorderRadius.circular(
+          LinkRideRadius.large,
+        ),
         child: Ink(
           padding:
               const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color:
+                LinkRideColors.surface,
             borderRadius:
-                BorderRadius.circular(18),
-            border: Border.all(
-              color: cardBorder,
+                BorderRadius.circular(
+              LinkRideRadius.large,
             ),
+            border: Border.all(
+              color:
+                  LinkRideColors.border,
+            ),
+            boxShadow:
+                LinkRideShadows.soft,
           ),
           child: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
+                width: 44,
+                height: 44,
+                decoration:
+                    BoxDecoration(
                   color:
-                      primaryBlue.withValues(
-                    alpha: 0.08,
+                      accent.withValues(
+                    alpha: 0.09,
                   ),
                   borderRadius:
-                      BorderRadius.circular(13),
+                      BorderRadius.circular(
+                    14,
+                  ),
                 ),
                 child: Icon(
                   icon,
-                  size: 22,
-                  color: primaryBlue,
+                  size: 21,
+                  color: accent,
                 ),
               ),
+
               const SizedBox(width: 13),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment:
@@ -645,26 +797,34 @@ class _TicketsScreenState extends State<TicketsScreen> {
                           const TextStyle(
                         fontSize: 14,
                         fontWeight:
-                            FontWeight.w700,
-                        color: textPrimary,
+                            FontWeight.w800,
+                        color:
+                            LinkRideColors
+                                .textPrimary,
                       ),
                     ),
+
                     const SizedBox(height: 3),
+
                     Text(
                       subtitle,
                       style:
                           const TextStyle(
                         fontSize: 11.5,
-                        color: textSecondary,
+                        color:
+                            LinkRideColors
+                                .textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
+
               const Icon(
-                Icons.chevron_right_rounded,
+                Icons
+                    .chevron_right_rounded,
                 color:
-                    Color(0xFF98A2B3),
+                    LinkRideColors.textMuted,
               ),
             ],
           ),
@@ -673,22 +833,84 @@ class _TicketsScreenState extends State<TicketsScreen> {
     );
   }
 
+  Widget _ticketInformation() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color:
+            LinkRideColors.softBlue,
+        borderRadius:
+            BorderRadius.circular(18),
+        border: Border.all(
+          color:
+              LinkRideColors.primaryBlue
+                  .withValues(
+            alpha: 0.08,
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: const [
+          Icon(
+            Icons.info_outline_rounded,
+            size: 20,
+            color:
+                LinkRideColors.primaryBlue,
+          ),
+
+          SizedBox(width: 11),
+
+          Expanded(
+            child: Text(
+              'Your current ticket is ready for use or already active. Used tickets remain available in your ticket history after a journey is completed.',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.45,
+                color:
+                    LinkRideColors
+                        .textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _loadingCard() {
     return Container(
       width: double.infinity,
-      height: 180,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius:
-            BorderRadius.circular(20),
-        border: Border.all(
-          color: cardBorder,
-        ),
-      ),
+      height: 190,
+      decoration:
+          LinkRideDecorations.card(),
       child: const Center(
-        child:
+        child: Column(
+          mainAxisSize:
+              MainAxisSize.min,
+          children: [
             CircularProgressIndicator(
-          color: primaryBlue,
+              strokeWidth: 2.3,
+              color:
+                  LinkRideColors
+                      .primaryBlue,
+            ),
+
+            SizedBox(height: 12),
+
+            Text(
+              'Loading tickets...',
+              style: TextStyle(
+                fontSize: 12.5,
+                color:
+                    LinkRideColors
+                        .textSecondary,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -698,40 +920,69 @@ class _TicketsScreenState extends State<TicketsScreen> {
     return Container(
       width: double.infinity,
       padding:
-          const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius:
-            BorderRadius.circular(18),
-        border: Border.all(
-          color: cardBorder,
-        ),
-      ),
+          const EdgeInsets.all(22),
+      decoration:
+          LinkRideDecorations.card(),
       child: Column(
         children: [
-          const Icon(
-            Icons.error_outline_rounded,
-            size: 38,
-            color: primaryBlue,
+          Container(
+            width: 60,
+            height: 60,
+            decoration:
+                const BoxDecoration(
+              color:
+                  LinkRideColors.dangerSoft,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.error_outline_rounded,
+              size: 29,
+              color:
+                  LinkRideColors.danger,
+            ),
           ),
-          const SizedBox(height: 10),
+
+          const SizedBox(height: 12),
+
+          const Text(
+            'Unable to load tickets',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight:
+                  FontWeight.w800,
+              color:
+                  LinkRideColors
+                      .textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
           Text(
             _errorMessage ??
                 'Unable to load tickets.',
-            textAlign: TextAlign.center,
+            textAlign:
+                TextAlign.center,
             style:
                 const TextStyle(
               fontSize: 12.5,
-              color: textSecondary,
+              height: 1.4,
+              color:
+                  LinkRideColors
+                      .textSecondary,
             ),
           ),
-          const SizedBox(height: 12),
-          TextButton.icon(
+
+          const SizedBox(height: 14),
+
+          OutlinedButton.icon(
             onPressed: _loadTickets,
             icon: const Icon(
               Icons.refresh_rounded,
+              size: 18,
             ),
-            label: const Text(
+            label:
+                const Text(
               'Try Again',
             ),
           ),
@@ -740,14 +991,85 @@ class _TicketsScreenState extends State<TicketsScreen> {
     );
   }
 
-  Widget _statusChip(String status) {
+  Widget _metricCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color accent,
+  }) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 11,
+      ),
+      decoration: BoxDecoration(
+        color:
+            accent.withValues(
+          alpha: 0.055,
+        ),
+        borderRadius:
+            BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 17,
+            color: accent,
+          ),
+
+          const SizedBox(width: 8),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style:
+                      const TextStyle(
+                    fontSize: 10.5,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+
+                const SizedBox(height: 2),
+
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow:
+                      TextOverflow.ellipsis,
+                  style:
+                      const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusChip(
+    String status,
+  ) {
     final String normalized =
         status.toUpperCase();
 
     final Color colour =
-        normalized == 'ACTIVE'
-            ? linkGreen
-            : primaryBlue;
+        _statusColor(status);
 
     return Container(
       padding:
@@ -761,81 +1083,117 @@ class _TicketsScreenState extends State<TicketsScreen> {
           alpha: 0.10,
         ),
         borderRadius:
-            BorderRadius.circular(20),
+            BorderRadius.circular(
+          LinkRideRadius.pill,
+        ),
       ),
       child: Text(
-        normalized.replaceAll('_', ' '),
+        normalized.replaceAll(
+          '_',
+          ' ',
+        ),
         style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
+          fontSize: 9.5,
+          fontWeight:
+              FontWeight.w800,
           color: colour,
         ),
       ),
     );
   }
 
+  Color _statusColor(
+    String status,
+  ) {
+    switch (status.toUpperCase()) {
+      case 'ACTIVE':
+        return LinkRideColors.linkGreen;
+
+      case 'USED':
+        return const Color(
+          0xFF3E7A49,
+        );
+
+      case 'ISSUED':
+        return LinkRideColors.primaryBlue;
+
+      default:
+        return LinkRideColors.textSecondary;
+    }
+  }
+
   Widget _locationRow({
     required IconData icon,
     required Color color,
+    required String label,
     required String text,
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: color,
+        Container(
+          width: 32,
+          height: 32,
+          decoration:
+              BoxDecoration(
+            color:
+                color.withValues(
+              alpha: 0.09,
+            ),
+            shape:
+                BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: color,
+          ),
         ),
-        const SizedBox(width: 8),
+
+        const SizedBox(width: 10),
+
         Expanded(
-          child: Text(
-            text,
-            style:
-                const TextStyle(
-              fontSize: 13,
-              fontWeight:
-                  FontWeight.w700,
-              color: textPrimary,
-            ),
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style:
+                    const TextStyle(
+                  fontSize: 9.5,
+                  fontWeight:
+                      FontWeight.w800,
+                  letterSpacing: 0.7,
+                  color:
+                      LinkRideColors
+                          .textMuted,
+                ),
+              ),
+
+              const SizedBox(height: 2),
+
+              Text(
+                text,
+                style:
+                    const TextStyle(
+                  fontSize: 12.8,
+                  fontWeight:
+                      FontWeight.w700,
+                  color:
+                      LinkRideColors
+                          .textPrimary,
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _metric({
-    required IconData icon,
-    required String value,
-  }) {
-    return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: primaryBlue,
-        ),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            value,
-            overflow:
-                TextOverflow.ellipsis,
-            style:
-                const TextStyle(
-              fontSize: 12.5,
-              fontWeight:
-                  FontWeight.w700,
-              color: textPrimary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  int _asInt(dynamic value) {
+  int _asInt(
+    dynamic value,
+  ) {
     if (value is int) {
       return value;
     }
@@ -850,7 +1208,9 @@ class _TicketsScreenState extends State<TicketsScreen> {
         0;
   }
 
-  double _asDouble(dynamic value) {
+  double _asDouble(
+    dynamic value,
+  ) {
     if (value is double) {
       return value;
     }
@@ -879,19 +1239,6 @@ class TicketsListScreen
     required this.usedOnly,
   });
 
-  static const Color primaryBlue =
-      Color(0xFF003F73);
-  static const Color linkGreen =
-      Color(0xFF4A9B45);
-  static const Color background =
-      Color(0xFFF7F9FB);
-  static const Color textPrimary =
-      Color(0xFF17212B);
-  static const Color textSecondary =
-      Color(0xFF667085);
-  static const Color cardBorder =
-      Color(0xFFE4E9EE);
-
   List<Map<String, dynamic>>
       get _visibleTickets {
     if (!usedOnly) {
@@ -899,11 +1246,12 @@ class TicketsListScreen
     }
 
     return tickets.where(
-      (ticket) =>
-          ticket['ticketStatus']
-                  ?.toString()
-                  .toUpperCase() ==
-              'USED',
+      (Map<String, dynamic> ticket) {
+        return ticket['ticketStatus']
+                ?.toString()
+                .toUpperCase() ==
+            'USED';
+      },
     ).toList();
   }
 
@@ -911,9 +1259,12 @@ class TicketsListScreen
     Map<String, dynamic> ticket,
   ) {
     final int journeyId =
-        _asInt(ticket['journeyId']);
+        _asInt(
+      ticket['journeyId'],
+    );
 
-    for (final journey in journeys) {
+    for (final Map<String, dynamic> journey
+        in journeys) {
       if (_asInt(journey['journeyId']) ==
           journeyId) {
         return journey;
@@ -930,112 +1281,222 @@ class TicketsListScreen
         _visibleTickets;
 
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor:
+          LinkRideColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 0,
         title: Text(
           usedOnly
               ? 'Used Tickets'
               : 'All Tickets',
-          style:
-              const TextStyle(
-            color: primaryBlue,
-            fontSize: 20,
-            fontWeight:
-                FontWeight.w800,
+        ),
+      ),
+      body: visibleTickets.isEmpty
+          ? ListView(
+              physics:
+                  const AlwaysScrollableScrollPhysics(),
+              padding:
+                  const EdgeInsets.all(24),
+              children: [
+                const SizedBox(height: 90),
+                _emptyState(),
+              ],
+            )
+          : ListView(
+              padding:
+                  const EdgeInsets.fromLTRB(
+                20,
+                16,
+                20,
+                30,
+              ),
+              children: [
+                _listSummary(
+                  visibleTickets.length,
+                ),
+
+                const SizedBox(height: 14),
+
+                ...visibleTickets.map(
+                  (
+                    Map<String, dynamic> ticket,
+                  ) {
+                    final Map<String, dynamic>?
+                        journey =
+                        _journeyForTicket(
+                      ticket,
+                    );
+
+                    return Padding(
+                      padding:
+                          const EdgeInsets.only(
+                        bottom: 12,
+                      ),
+                      child: _ticketCard(
+                        context,
+                        ticket,
+                        journey,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _listSummary(
+    int count,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient:
+            LinkRideGradients.primarySoft,
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.large,
+        ),
+        border: Border.all(
+          color:
+              LinkRideColors.primaryBlue
+                  .withValues(
+            alpha: 0.08,
           ),
         ),
       ),
-      body:
-          visibleTickets.isEmpty
-              ? ListView(
-                  physics:
-                      const AlwaysScrollableScrollPhysics(),
-                  padding:
-                      const EdgeInsets.all(24),
-                  children: [
-                    const SizedBox(height: 130),
-                    const Icon(
-                      Icons.confirmation_number_outlined,
-                      size: 56,
-                      color: primaryBlue,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      usedOnly
-                          ? 'No used tickets yet'
-                          : 'No tickets yet',
-                      textAlign:
-                          TextAlign.center,
-                      style:
-                          const TextStyle(
-                        fontSize: 18,
-                        fontWeight:
-                            FontWeight.w800,
-                        color: textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      usedOnly
-                          ? 'Tickets from completed journeys will appear here.'
-                          : 'Tickets you receive after payment will appear here.',
-                      textAlign:
-                          TextAlign.center,
-                      style:
-                          const TextStyle(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: textSecondary,
-                      ),
-                    ),
-                  ],
-                )
-              : ListView(
-                  padding:
-                      const EdgeInsets.fromLTRB(
-                    20,
-                    18,
-                    20,
-                    30,
-                  ),
-                  children: [
-                    Text(
-                      '${visibleTickets.length} '
-                      '${visibleTickets.length == 1 ? 'ticket' : 'tickets'}',
-                      style:
-                          const TextStyle(
-                        fontSize: 13,
-                        fontWeight:
-                            FontWeight.w700,
-                        color: textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ...visibleTickets.map(
-                      (ticket) {
-                        final journey =
-                            _journeyForTicket(
-                          ticket,
-                        );
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration:
+                const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              usedOnly
+                  ? Icons.history_rounded
+                  : Icons
+                      .confirmation_number_rounded,
+              size: 21,
+              color:
+                  LinkRideColors
+                      .primaryBlue,
+            ),
+          ),
 
-                        return Padding(
-                          padding:
-                              const EdgeInsets.only(
-                            bottom: 12,
-                          ),
-                          child: _ticketCard(
-                            context,
-                            ticket,
-                            journey,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  usedOnly
+                      ? 'Ticket history'
+                      : 'Your tickets',
+                  style:
+                      const TextStyle(
+                    fontSize: 15,
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
                 ),
+
+                const SizedBox(height: 3),
+
+                Text(
+                  '$count ${count == 1 ? 'ticket' : 'tickets'}',
+                  style:
+                      const TextStyle(
+                    fontSize: 12,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(26),
+      decoration:
+          LinkRideDecorations.card(),
+      child: Column(
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration:
+                const BoxDecoration(
+              color:
+                  LinkRideColors.softBlue,
+              shape:
+                  BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons
+                  .confirmation_number_outlined,
+              size: 31,
+              color:
+                  LinkRideColors
+                      .primaryBlue,
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          Text(
+            usedOnly
+                ? 'No used tickets yet'
+                : 'No tickets yet',
+            textAlign:
+                TextAlign.center,
+            style:
+                const TextStyle(
+              fontSize: 17,
+              fontWeight:
+                  FontWeight.w800,
+              color:
+                  LinkRideColors
+                      .textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            usedOnly
+                ? 'Tickets from completed journeys will appear here.'
+                : 'Tickets you receive after payment will appear here.',
+            textAlign:
+                TextAlign.center,
+            style:
+                const TextStyle(
+              fontSize: 12.5,
+              height: 1.4,
+              color:
+                  LinkRideColors
+                      .textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1045,7 +1506,9 @@ class TicketsListScreen
     Map<String, dynamic>? journey,
   ) {
     final int ticketId =
-        _asInt(ticket['ticketId']);
+        _asInt(
+      ticket['ticketId'],
+    );
 
     final String status =
         ticket['ticketStatus']
@@ -1067,129 +1530,235 @@ class TicketsListScreen
                 ?.toString() ??
             'Journey destination';
 
+    final Color statusColor =
+        _statusColor(status);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap:
-            journey == null
-                ? null
-                : () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) =>
-                                TicketScreen(
-                          journey: journey,
-                          ticket: ticket,
-                        ),
-                      ),
-                    );
-                  },
-        borderRadius:
-            BorderRadius.circular(18),
-        child: Ink(
-          padding:
-              const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius:
-                BorderRadius.circular(18),
-            border: Border.all(
-              color: cardBorder,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color:
-                          primaryBlue.withValues(
-                        alpha: 0.08,
-                      ),
-                      borderRadius:
-                          BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.confirmation_number_rounded,
-                      color: primaryBlue,
-                      size: 21,
+        onTap: journey == null
+            ? null
+            : () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        TicketScreen(
+                      journey: journey,
+                      ticket: ticket,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Ticket #$ticketId',
-                          style:
-                              const TextStyle(
-                            fontSize: 14,
-                            fontWeight:
-                                FontWeight.w800,
-                            color: textPrimary,
-                          ),
+                );
+              },
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.large,
+        ),
+        child: Ink(
+          decoration: BoxDecoration(
+            color:
+                LinkRideColors.surface,
+            borderRadius:
+                BorderRadius.circular(
+              LinkRideRadius.large,
+            ),
+            border: Border.all(
+              color:
+                  LinkRideColors.border,
+            ),
+            boxShadow:
+                LinkRideShadows.soft,
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.fromLTRB(
+                  15,
+                  14,
+                  15,
+                  13,
+                ),
+                decoration:
+                    BoxDecoration(
+                  color:
+                      statusColor
+                          .withValues(
+                    alpha: 0.05,
+                  ),
+                  borderRadius:
+                      const BorderRadius.vertical(
+                    top: Radius.circular(
+                      LinkRideRadius.large,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration:
+                          BoxDecoration(
+                        color:
+                            statusColor
+                                .withValues(
+                          alpha: 0.10,
                         ),
-                        const SizedBox(height: 2),
+                        borderRadius:
+                            BorderRadius
+                                .circular(
+                          12,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons
+                            .confirmation_number_rounded,
+                        color:
+                            statusColor,
+                        size: 20,
+                      ),
+                    ),
+
+                    const SizedBox(width: 11),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment
+                                .start,
+                        children: [
+                          Text(
+                            'Ticket #$ticketId',
+                            style:
+                                const TextStyle(
+                              fontSize: 14,
+                              fontWeight:
+                                  FontWeight
+                                      .w800,
+                              color:
+                                  LinkRideColors
+                                      .textPrimary,
+                            ),
+                          ),
+
+                          const SizedBox(
+                            height: 2,
+                          ),
+
+                          Text(
+                            code,
+                            maxLines: 1,
+                            overflow:
+                                TextOverflow
+                                    .ellipsis,
+                            style:
+                                const TextStyle(
+                              fontSize: 11.5,
+                              color:
+                                  LinkRideColors
+                                      .textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    _statusChip(status),
+                  ],
+                ),
+              ),
+
+              Padding(
+                padding:
+                    const EdgeInsets.all(
+                  15,
+                ),
+                child: Column(
+                  children: [
+                    _routeRow(
+                      icon: Icons
+                          .trip_origin_rounded,
+                      color:
+                          LinkRideColors
+                              .linkGreen,
+                      text: origin,
+                    ),
+
+                    Padding(
+                      padding:
+                          const EdgeInsets.only(
+                        left: 15,
+                      ),
+                      child: Align(
+                        alignment:
+                            Alignment.centerLeft,
+                        child: Container(
+                          width: 2,
+                          height: 17,
+                          color:
+                              LinkRideColors
+                                  .borderStrong,
+                        ),
+                      ),
+                    ),
+
+                    _routeRow(
+                      icon: Icons
+                          .location_on_rounded,
+                      color:
+                          LinkRideColors
+                              .primaryBlue,
+                      text: destination,
+                    ),
+
+                    const SizedBox(
+                      height: 12,
+                    ),
+
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons
+                              .route_rounded,
+                          size: 15,
+                          color:
+                              LinkRideColors
+                                  .textMuted,
+                        ),
+
+                        const SizedBox(
+                          width: 6,
+                        ),
+
                         Text(
-                          code,
-                          overflow:
-                              TextOverflow.ellipsis,
+                          'Journey #${_asInt(ticket['journeyId'])}',
                           style:
                               const TextStyle(
                             fontSize: 11.5,
-                            color: textSecondary,
+                            fontWeight:
+                                FontWeight
+                                    .w700,
+                            color:
+                                LinkRideColors
+                                    .textSecondary,
                           ),
                         ),
+
+                        const Spacer(),
+
+                        if (journey != null)
+                          const Icon(
+                            Icons
+                                .chevron_right_rounded,
+                            color:
+                                LinkRideColors
+                                    .textMuted,
+                          ),
                       ],
                     ),
-                  ),
-                  _statusChip(status),
-                ],
-              ),
-              const SizedBox(height: 15),
-              _locationRow(
-                icon: Icons.trip_origin_rounded,
-                color: linkGreen,
-                text: origin,
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.only(
-                  left: 7,
-                ),
-                child: Container(
-                  width: 2,
-                  height: 18,
-                  color: cardBorder,
-                ),
-              ),
-              _locationRow(
-                icon: Icons.location_on_rounded,
-                color: primaryBlue,
-                text: destination,
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment:
-                    Alignment.centerRight,
-                child: Text(
-                  'Journey #${_asInt(ticket['journeyId'])}',
-                  style:
-                      const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight:
-                        FontWeight.w700,
-                    color: textSecondary,
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -1199,14 +1768,57 @@ class TicketsListScreen
     );
   }
 
-  Widget _statusChip(String status) {
-    final String normalized =
-        status.toUpperCase();
+  Widget _routeRow({
+    required IconData icon,
+    required Color color,
+    required String text,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 31,
+          height: 31,
+          decoration:
+              BoxDecoration(
+            color:
+                color.withValues(
+              alpha: 0.09,
+            ),
+            shape:
+                BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            size: 15,
+            color: color,
+          ),
+        ),
 
+        const SizedBox(width: 9),
+
+        Expanded(
+          child: Text(
+            text,
+            style:
+                const TextStyle(
+              fontSize: 12.5,
+              fontWeight:
+                  FontWeight.w700,
+              color:
+                  LinkRideColors
+                      .textPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _statusChip(
+    String status,
+  ) {
     final Color colour =
-        normalized == 'ACTIVE'
-            ? linkGreen
-            : primaryBlue;
+        _statusColor(status);
 
     return Container(
       padding:
@@ -1220,49 +1832,50 @@ class TicketsListScreen
           alpha: 0.10,
         ),
         borderRadius:
-            BorderRadius.circular(20),
+            BorderRadius.circular(
+          LinkRideRadius.pill,
+        ),
       ),
       child: Text(
-        normalized,
+        status
+            .toUpperCase()
+            .replaceAll(
+              '_',
+              ' ',
+            ),
         style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
+          fontSize: 9.5,
+          fontWeight:
+              FontWeight.w800,
           color: colour,
         ),
       ),
     );
   }
 
-  Widget _locationRow({
-    required IconData icon,
-    required Color color,
-    required String text,
-  }) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: color,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style:
-                const TextStyle(
-              fontSize: 13,
-              fontWeight:
-                  FontWeight.w700,
-              color: textPrimary,
-            ),
-          ),
-        ),
-      ],
-    );
+  Color _statusColor(
+    String status,
+  ) {
+    switch (status.toUpperCase()) {
+      case 'ACTIVE':
+        return LinkRideColors.linkGreen;
+
+      case 'USED':
+        return const Color(
+          0xFF3E7A49,
+        );
+
+      case 'ISSUED':
+        return LinkRideColors.primaryBlue;
+
+      default:
+        return LinkRideColors.textSecondary;
+    }
   }
 
-  int _asInt(dynamic value) {
+  int _asInt(
+    dynamic value,
+  ) {
     if (value is int) {
       return value;
     }

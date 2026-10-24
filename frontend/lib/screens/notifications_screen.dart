@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_storage.dart';
 import '../services/notification_service.dart';
+import '../theme/link_ride_theme.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({
@@ -15,24 +16,6 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState
     extends State<NotificationsScreen> {
-  static const Color primaryBlue =
-      Color(0xFF003F73);
-
-  static const Color linkGreen =
-      Color(0xFF4A9B45);
-
-  static const Color background =
-      Color(0xFFF7F9FB);
-
-  static const Color textPrimary =
-      Color(0xFF17212B);
-
-  static const Color textSecondary =
-      Color(0xFF667085);
-
-  static const Color cardBorder =
-      Color(0xFFE4E9EE);
-
   final AuthStorage _authStorage =
       AuthStorage();
 
@@ -49,7 +32,6 @@ class _NotificationsScreenState
   @override
   void initState() {
     super.initState();
-
     _loadNotifications();
   }
 
@@ -93,13 +75,13 @@ class _NotificationsScreenState
 
       setState(() {
         _isLoading = false;
-        _errorMessage =
-            error
-                .toString()
-                .replaceFirst(
-                  'Exception: ',
-                  '',
-                );
+
+        _errorMessage = error
+            .toString()
+            .replaceFirst(
+              'Exception: ',
+              '',
+            );
       });
     }
   }
@@ -132,9 +114,11 @@ class _NotificationsScreenState
         return;
       }
 
-      await _notificationService.markAsRead(
+      await _notificationService
+          .markAsRead(
         token: token,
-        notificationId: notificationId,
+        notificationId:
+            notificationId,
       );
 
       if (!mounted) {
@@ -160,7 +144,8 @@ class _NotificationsScreenState
     }
   }
 
-  Future<void> _markAllAsRead() async {
+  Future<void> _markAllAsRead()
+      async {
     try {
       final String? token =
           await _authStorage.getToken();
@@ -182,7 +167,8 @@ class _NotificationsScreenState
       setState(() {
         for (final notification
             in _notifications) {
-          notification['read'] = true;
+          notification['read'] =
+              true;
         }
       });
     } catch (_) {
@@ -202,75 +188,74 @@ class _NotificationsScreenState
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     final bool hasUnread =
         _notifications.any(
       (notification) =>
           notification['read'] != true,
     );
 
+    final int unreadCount =
+        _notifications.where(
+      (notification) =>
+          notification['read'] != true,
+    ).length;
+
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor:
+          LinkRideColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
+          tooltip: 'Back',
           onPressed: () {
             Navigator.pop(context);
           },
           icon: const Icon(
             Icons.arrow_back_rounded,
-            color: primaryBlue,
           ),
         ),
         title: const Text(
           'Notifications',
-          style: TextStyle(
-            color: primaryBlue,
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-          ),
         ),
         actions: [
           if (hasUnread)
             TextButton(
-              onPressed: _markAllAsRead,
+              onPressed:
+                  _markAllAsRead,
               child: const Text(
                 'Mark all read',
-                style: TextStyle(
-                  color: primaryBlue,
-                  fontWeight:
-                      FontWeight.w700,
-                ),
               ),
             ),
         ],
       ),
       body: SafeArea(
+        top: false,
         child: RefreshIndicator(
-          onRefresh: _loadNotifications,
-          child: _content(),
+          onRefresh:
+              _loadNotifications,
+          color:
+              LinkRideColors
+                  .primaryBlue,
+          child: _content(
+            unreadCount,
+          ),
         ),
       ),
     );
   }
 
-  Widget _content() {
+  Widget _content(
+    int unreadCount,
+  ) {
     if (_isLoading) {
       return ListView(
         physics:
             const AlwaysScrollableScrollPhysics(),
-        children: const [
-          SizedBox(height: 220),
-          Center(
-            child:
-                CircularProgressIndicator(
-              color: primaryBlue,
-            ),
-          ),
+        padding:
+            const EdgeInsets.all(20),
+        children: [
+          const SizedBox(height: 110),
+          _loadingState(),
         ],
       );
     }
@@ -282,32 +267,8 @@ class _NotificationsScreenState
         padding:
             const EdgeInsets.all(20),
         children: [
-          const SizedBox(height: 100),
-          const Icon(
-            Icons.notifications_off_outlined,
-            size: 48,
-            color: primaryBlue,
-          ),
-          const SizedBox(height: 14),
-          Text(
-            _errorMessage!,
-            textAlign:
-                TextAlign.center,
-            style: const TextStyle(
-              color: textSecondary,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Center(
-            child: TextButton(
-              onPressed:
-                  _loadNotifications,
-              child: const Text(
-                'Try again',
-              ),
-            ),
-          ),
+          const SizedBox(height: 70),
+          _errorState(),
         ],
       );
     }
@@ -318,36 +279,9 @@ class _NotificationsScreenState
             const AlwaysScrollableScrollPhysics(),
         padding:
             const EdgeInsets.all(20),
-        children: const [
-          SizedBox(height: 100),
-          Icon(
-            Icons.notifications_none_rounded,
-            size: 52,
-            color: primaryBlue,
-          ),
-          SizedBox(height: 14),
-          Text(
-            'No notifications yet',
-            textAlign:
-                TextAlign.center,
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight:
-                  FontWeight.w800,
-              color: textPrimary,
-            ),
-          ),
-          SizedBox(height: 5),
-          Text(
-            'Important journey and disruption updates will appear here.',
-            textAlign:
-                TextAlign.center,
-            style: TextStyle(
-              fontSize: 12.5,
-              height: 1.4,
-              color: textSecondary,
-            ),
-          ),
+        children: [
+          const SizedBox(height: 80),
+          _emptyState(),
         ],
       );
     }
@@ -358,12 +292,12 @@ class _NotificationsScreenState
       padding:
           const EdgeInsets.fromLTRB(
         20,
-        18,
+        14,
         20,
         30,
       ),
       itemCount:
-          _notifications.length,
+          _notifications.length + 1,
       separatorBuilder:
           (_, _) =>
               const SizedBox(
@@ -373,13 +307,142 @@ class _NotificationsScreenState
         BuildContext context,
         int index,
       ) {
+        if (index == 0) {
+          return _summaryCard(
+            unreadCount,
+          );
+        }
+
         final notification =
-            _notifications[index];
+            _notifications[index - 1];
 
         return _notificationCard(
           notification,
         );
       },
+    );
+  }
+
+  Widget _summaryCard(
+    int unreadCount,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient:
+            LinkRideGradients
+                .primarySoft,
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.large,
+        ),
+        border: Border.all(
+          color:
+              LinkRideColors
+                  .primaryBlue
+                  .withValues(
+            alpha: 0.08,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration:
+                const BoxDecoration(
+              color: Colors.white,
+              shape:
+                  BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons
+                  .notifications_rounded,
+              size: 22,
+              color:
+                  LinkRideColors
+                      .primaryBlue,
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Activity feed',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
+                ),
+
+                const SizedBox(height: 3),
+
+                Text(
+                  unreadCount == 0
+                      ? 'You are all caught up.'
+                      : '$unreadCount unread notification${unreadCount == 1 ? '' : 's'}',
+                  style:
+                      const TextStyle(
+                    fontSize: 12,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          if (unreadCount > 0)
+            Container(
+              constraints:
+                  const BoxConstraints(
+                minWidth: 34,
+              ),
+              height: 34,
+              padding:
+                  const EdgeInsets.symmetric(
+                horizontal: 10,
+              ),
+              alignment:
+                  Alignment.center,
+              decoration:
+                  BoxDecoration(
+                color:
+                    LinkRideColors
+                        .primaryBlue,
+                borderRadius:
+                    BorderRadius.circular(
+                  LinkRideRadius.pill,
+                ),
+              ),
+              child: Text(
+                unreadCount > 99
+                    ? '99+'
+                    : '$unreadCount',
+                style:
+                    const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight:
+                      FontWeight.w800,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -420,7 +483,8 @@ class _NotificationsScreenState
     final Color accent =
         eventType ==
                 'DISRUPTION_RESOLVED'
-            ? linkGreen
+            ? LinkRideColors
+                .linkGreen
             : _severityColor(
                 severity,
               );
@@ -428,142 +492,218 @@ class _NotificationsScreenState
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () =>
-            _markAsRead(
-          notification,
-        ),
+        onTap: () {
+          _markAsRead(
+            notification,
+          );
+        },
         borderRadius:
-            BorderRadius.circular(18),
+            BorderRadius.circular(
+          LinkRideRadius.large,
+        ),
         child: Ink(
           padding:
-              const EdgeInsets.all(16),
+              const EdgeInsets.all(15),
           decoration: BoxDecoration(
             color: isRead
-                ? Colors.white
+                ? LinkRideColors
+                    .surface
                 : accent.withValues(
                     alpha: 0.055,
                   ),
             borderRadius:
                 BorderRadius.circular(
-              18,
+              LinkRideRadius.large,
             ),
             border: Border.all(
               color: isRead
-                  ? cardBorder
+                  ? LinkRideColors
+                      .border
                   : accent.withValues(
                       alpha: 0.24,
                     ),
             ),
+            boxShadow:
+                isRead
+                    ? const []
+                    : LinkRideShadows
+                        .soft,
           ),
           child: Row(
             crossAxisAlignment:
                 CrossAxisAlignment.start,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration:
                     BoxDecoration(
-                  color: accent
-                      .withValues(
+                  color:
+                      accent.withValues(
                     alpha: 0.10,
                   ),
                   borderRadius:
-                      BorderRadius
-                          .circular(13),
+                      BorderRadius.circular(
+                    14,
+                  ),
                 ),
                 child: Icon(
-                  eventType ==
-                          'DISRUPTION_RESOLVED'
-                      ? Icons
-                          .check_circle_outline_rounded
-                      : Icons
-                          .warning_amber_rounded,
+                  _iconForNotification(
+                    eventType,
+                  ),
                   color: accent,
+                  size: 22,
                 ),
               ),
-              const SizedBox(
-                width: 12,
-              ),
+
+              const SizedBox(width: 12),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment:
-                      CrossAxisAlignment
-                          .start,
+                      CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment:
+                          CrossAxisAlignment
+                              .start,
                       children: [
                         Expanded(
                           child: Text(
                             title,
                             style:
-                                const TextStyle(
+                                TextStyle(
                               fontSize: 14,
                               fontWeight:
-                                  FontWeight
-                                      .w800,
+                                  isRead
+                                      ? FontWeight
+                                          .w700
+                                      : FontWeight
+                                          .w800,
                               color:
-                                  textPrimary,
+                                  LinkRideColors
+                                      .textPrimary,
                             ),
                           ),
                         ),
-                        if (!isRead)
+
+                        if (!isRead) ...[
+                          const SizedBox(
+                            width: 8,
+                          ),
                           Container(
                             width: 8,
                             height: 8,
+                            margin:
+                                const EdgeInsets
+                                    .only(
+                              top: 5,
+                            ),
                             decoration:
                                 BoxDecoration(
-                              color:
-                                  accent,
+                              color: accent,
                               shape:
                                   BoxShape.circle,
                             ),
                           ),
+                        ],
                       ],
                     ),
-                    const SizedBox(
-                      height: 4,
-                    ),
-                    if (routeId > 0)
-                      Text(
-                        'Route #$routeId • $severity',
-                        style:
-                            TextStyle(
-                          fontSize: 10.5,
-                          fontWeight:
-                              FontWeight
-                                  .w700,
-                          color: accent,
+
+                    const SizedBox(height: 6),
+
+                    Wrap(
+                      spacing: 7,
+                      runSpacing: 6,
+                      children: [
+                        _metadataChip(
+                          label:
+                              _eventLabel(
+                            eventType,
+                          ),
+                          accent: accent,
                         ),
-                      ),
-                    const SizedBox(
-                      height: 5,
+
+                        if (routeId > 0)
+                          _metadataChip(
+                            label:
+                                'ROUTE #$routeId',
+                            accent:
+                                LinkRideColors
+                                    .primaryBlue,
+                          ),
+
+                        _metadataChip(
+                          label:
+                              severity,
+                          accent:
+                              _severityColor(
+                            severity,
+                          ),
+                        ),
+                      ],
                     ),
+
+                    const SizedBox(height: 8),
+
                     Text(
                       message,
                       style:
                           const TextStyle(
                         fontSize: 12,
-                        height: 1.4,
+                        height: 1.45,
                         color:
-                            textSecondary,
+                            LinkRideColors
+                                .textSecondary,
                       ),
                     ),
-                    const SizedBox(
-                      height: 6,
-                    ),
-                    Text(
-                      _formatDateTime(
-                        notification[
-                                'createdAt']
-                            ?.toString(),
-                      ),
-                      style:
-                          const TextStyle(
-                        fontSize: 10.5,
-                        color:
-                            textSecondary,
-                      ),
+
+                    const SizedBox(height: 9),
+
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons
+                              .schedule_rounded,
+                          size: 14,
+                          color:
+                              LinkRideColors
+                                  .textMuted,
+                        ),
+
+                        const SizedBox(width: 5),
+
+                        Text(
+                          _formatDateTime(
+                            notification[
+                                    'createdAt']
+                                ?.toString(),
+                          ),
+                          style:
+                              const TextStyle(
+                            fontSize: 10.5,
+                            color:
+                                LinkRideColors
+                                    .textMuted,
+                          ),
+                        ),
+
+                        const Spacer(),
+
+                        if (!isRead)
+                          Text(
+                            'Tap to mark read',
+                            style:
+                                TextStyle(
+                              fontSize: 10,
+                              fontWeight:
+                                  FontWeight
+                                      .w700,
+                              color:
+                                  accent,
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),
@@ -575,12 +715,267 @@ class _NotificationsScreenState
     );
   }
 
+  Widget _metadataChip({
+    required String label,
+    required Color accent,
+  }) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color:
+            accent.withValues(
+          alpha: 0.08,
+        ),
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.pill,
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight:
+              FontWeight.w800,
+          letterSpacing: 0.25,
+          color: accent,
+        ),
+      ),
+    );
+  }
+
+  Widget _loadingState() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(28),
+      decoration:
+          LinkRideDecorations.card(),
+      child: const Column(
+        children: [
+          CircularProgressIndicator(
+            strokeWidth: 2.3,
+            color:
+                LinkRideColors
+                    .primaryBlue,
+          ),
+
+          SizedBox(height: 13),
+
+          Text(
+            'Loading notifications...',
+            style: TextStyle(
+              fontSize: 12.5,
+              color:
+                  LinkRideColors
+                      .textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _errorState() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(24),
+      decoration:
+          LinkRideDecorations.card(),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration:
+                const BoxDecoration(
+              color:
+                  LinkRideColors
+                      .dangerSoft,
+              shape:
+                  BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons
+                  .notifications_off_outlined,
+              size: 30,
+              color:
+                  LinkRideColors
+                      .danger,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          const Text(
+            'Unable to load notifications',
+            textAlign:
+                TextAlign.center,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight:
+                  FontWeight.w800,
+              color:
+                  LinkRideColors
+                      .textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            _errorMessage!,
+            textAlign:
+                TextAlign.center,
+            style:
+                const TextStyle(
+              fontSize: 12.5,
+              height: 1.4,
+              color:
+                  LinkRideColors
+                      .textSecondary,
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          OutlinedButton.icon(
+            onPressed:
+                _loadNotifications,
+            icon: const Icon(
+              Icons.refresh_rounded,
+              size: 18,
+            ),
+            label: const Text(
+              'Try Again',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(26),
+      decoration:
+          LinkRideDecorations.card(),
+      child: Column(
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration:
+                const BoxDecoration(
+              color:
+                  LinkRideColors
+                      .softBlue,
+              shape:
+                  BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons
+                  .notifications_none_rounded,
+              size: 32,
+              color:
+                  LinkRideColors
+                      .primaryBlue,
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          const Text(
+            'No notifications yet',
+            textAlign:
+                TextAlign.center,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight:
+                  FontWeight.w800,
+              color:
+                  LinkRideColors
+                      .textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          const Text(
+            'Important journey and disruption updates will appear here.',
+            textAlign:
+                TextAlign.center,
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.4,
+              color:
+                  LinkRideColors
+                      .textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _iconForNotification(
+    String eventType,
+  ) {
+    switch (eventType) {
+      case 'DISRUPTION_RESOLVED':
+        return Icons
+            .check_circle_outline_rounded;
+
+      case 'DISRUPTION_CREATED':
+      case 'DISRUPTION_UPDATED':
+        return Icons
+            .warning_amber_rounded;
+
+      default:
+        return Icons
+            .notifications_none_rounded;
+    }
+  }
+
+  String _eventLabel(
+    String eventType,
+  ) {
+    switch (eventType) {
+      case 'DISRUPTION_RESOLVED':
+        return 'RESOLVED';
+
+      case 'DISRUPTION_CREATED':
+        return 'NEW DISRUPTION';
+
+      case 'DISRUPTION_UPDATED':
+        return 'UPDATED';
+
+      default:
+        if (eventType.isEmpty) {
+          return 'UPDATE';
+        }
+
+        return eventType
+            .replaceAll(
+              '_',
+              ' ',
+            );
+    }
+  }
+
   Color _severityColor(
     String severity,
   ) {
     switch (severity) {
       case 'LOW':
-        return linkGreen;
+        return LinkRideColors.linkGreen;
 
       case 'HIGH':
         return const Color(
@@ -588,15 +983,11 @@ class _NotificationsScreenState
         );
 
       case 'CRITICAL':
-        return const Color(
-          0xFFD64545,
-        );
+        return LinkRideColors.danger;
 
       case 'MEDIUM':
       default:
-        return const Color(
-          0xFFE28A19,
-        );
+        return LinkRideColors.warning;
     }
   }
 
@@ -631,22 +1022,34 @@ class _NotificationsScreenState
     final String day =
         parsed.day
             .toString()
-            .padLeft(2, '0');
+            .padLeft(
+              2,
+              '0',
+            );
 
     final String month =
         parsed.month
             .toString()
-            .padLeft(2, '0');
+            .padLeft(
+              2,
+              '0',
+            );
 
     final String hour =
         parsed.hour
             .toString()
-            .padLeft(2, '0');
+            .padLeft(
+              2,
+              '0',
+            );
 
     final String minute =
         parsed.minute
             .toString()
-            .padLeft(2, '0');
+            .padLeft(
+              2,
+              '0',
+            );
 
     return '$day/$month/${parsed.year} • $hour:$minute';
   }

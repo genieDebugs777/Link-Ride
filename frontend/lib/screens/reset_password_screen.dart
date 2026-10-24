@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../theme/link_ride_theme.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
@@ -19,46 +20,30 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState
     extends State<ResetPasswordScreen> {
-  final _formKey =
+  final GlobalKey<FormState> _formKey =
       GlobalKey<FormState>();
 
   final AuthService _authService =
       AuthService();
 
-  final TextEditingController
-      resetCodeController =
+  final TextEditingController resetCodeController =
       TextEditingController();
 
-  final TextEditingController
-      newPasswordController =
+  final TextEditingController newPasswordController =
       TextEditingController();
 
-  final TextEditingController
-      confirmPasswordController =
+  final TextEditingController confirmPasswordController =
       TextEditingController();
 
   bool obscureNewPassword = true;
   bool obscureConfirmPassword = true;
   bool _isResetting = false;
 
-  static const Color primaryBlue =
-      Color(0xFF003F73);
-
-  static const Color fieldColour =
-      Color(0xFFF3F5F7);
-
-  static const Color textPrimary =
-      Color(0xFF17212B);
-
-  static const Color textSecondary =
-      Color(0xFF667085);
-
   @override
   void initState() {
     super.initState();
 
-    if (widget.developmentResetCode !=
-        null) {
+    if (widget.developmentResetCode != null) {
       resetCodeController.text =
           widget.developmentResetCode!;
     }
@@ -69,7 +54,6 @@ class _ResetPasswordScreenState
     resetCodeController.dispose();
     newPasswordController.dispose();
     confirmPasswordController.dispose();
-
     super.dispose();
   }
 
@@ -123,8 +107,7 @@ class _ResetPasswordScreenState
   }
 
   Future<void> _resetPassword() async {
-    FocusScope.of(context)
-        .unfocus();
+    FocusScope.of(context).unfocus();
 
     if (_isResetting) {
       return;
@@ -191,449 +174,605 @@ class _ResetPasswordScreenState
     }
   }
 
-  InputDecoration _fieldDecoration({
-    required String hint,
-    required IconData icon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(
-        color: Color(0xFF98A2B3),
-        fontSize: 14,
-      ),
-      prefixIcon: Icon(
-        icon,
-        size: 20,
-        color: textSecondary,
-      ),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: fieldColour,
-      contentPadding:
-          const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 17,
-      ),
-      border: OutlineInputBorder(
-        borderRadius:
-            BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder:
-          OutlineInputBorder(
-        borderRadius:
-            BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder:
-          OutlineInputBorder(
-        borderRadius:
-            BorderRadius.circular(16),
-        borderSide:
-            const BorderSide(
-          color: primaryBlue,
-          width: 1.5,
-        ),
-      ),
-      errorBorder:
-          OutlineInputBorder(
-        borderRadius:
-            BorderRadius.circular(16),
-        borderSide:
-            const BorderSide(
-          color: Color(0xFFD92D20),
-          width: 1.2,
-        ),
-      ),
-      focusedErrorBorder:
-          OutlineInputBorder(
-        borderRadius:
-            BorderRadius.circular(16),
-        borderSide:
-            const BorderSide(
-          color: Color(0xFFD92D20),
-          width: 1.5,
-        ),
-      ),
-      errorStyle:
-          const TextStyle(
-        fontSize: 12,
-      ),
-    );
-  }
-
   @override
   Widget build(
     BuildContext context,
   ) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: GestureDetector(
-          onTap: () =>
-              FocusScope.of(context)
-                  .unfocus(),
-          child:
-              SingleChildScrollView(
-            keyboardDismissBehavior:
-                ScrollViewKeyboardDismissBehavior
-                    .onDrag,
-            padding:
-                const EdgeInsets.symmetric(
-              horizontal: 28,
-              vertical: 18,
+      backgroundColor:
+          LinkRideColors.background,
+      body: Stack(
+        children: [
+          Positioned(
+            top: -100,
+            right: -90,
+            child: _backgroundCircle(
+              size: 250,
+              color:
+                  LinkRideColors.softBlueStrong,
             ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints:
-                    const BoxConstraints(
-                  maxWidth: 430,
+          ),
+          Positioned(
+            bottom: -120,
+            left: -110,
+            child: _backgroundCircle(
+              size: 290,
+              color:
+                  LinkRideColors.softGreenStrong,
+            ),
+          ),
+          SafeArea(
+            child: GestureDetector(
+              onTap: () {
+                FocusScope.of(context).unfocus();
+              },
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior
+                        .onDrag,
+                padding:
+                    const EdgeInsets.fromLTRB(
+                  20,
+                  14,
+                  20,
+                  32,
                 ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment
-                            .stretch,
-                    children: [
-                      Align(
-                        alignment:
-                            Alignment
-                                .centerLeft,
-                        child:
-                            IconButton(
-                          onPressed: () =>
-                              Navigator.pop(
-                            context,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(
+                      maxWidth: 430,
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment
+                                .stretch,
+                        children: [
+                          _topBar(),
+
+                          const SizedBox(
+                            height: 24,
                           ),
-                          icon:
-                              const Icon(
-                            Icons
-                                .arrow_back_rounded,
-                            color:
-                                primaryBlue,
+
+                          _resetHeader(),
+
+                          const SizedBox(
+                            height: 24,
                           ),
-                        ),
-                      ),
 
-                      Center(
-                        child:
-                            Image.asset(
-                          'assets/link_ride_logo.png',
-                          width: 210,
-                          height: 105,
-                          fit: BoxFit
-                              .contain,
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 18,
-                      ),
-
-                      const Text(
-                        'Reset your password',
-                        textAlign:
-                            TextAlign.center,
-                        style:
-                            TextStyle(
-                          fontSize: 27,
-                          fontWeight:
-                              FontWeight
-                                  .w800,
-                          letterSpacing:
-                              -0.4,
-                          color:
-                              primaryBlue,
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 8,
-                      ),
-
-                      Text(
-                        'Enter the one-time reset code for ${widget.email} and choose a new password.',
-                        textAlign:
-                            TextAlign.center,
-                        style:
-                            const TextStyle(
-                          fontSize: 14,
-                          height: 1.5,
-                          color:
-                              textSecondary,
-                        ),
-                      ),
-
-                      if (widget
-                              .developmentResetCode !=
-                          null) ...[
-                        const SizedBox(
-                          height: 18,
-                        ),
-                        Container(
-                          padding:
-                              const EdgeInsets.all(
-                            14,
-                          ),
-                          decoration:
-                              BoxDecoration(
-                            color:
-                                const Color(
-                              0xFFFFF8E8,
+                          if (widget
+                                  .developmentResetCode !=
+                              null) ...[
+                            _prototypeNotice(),
+                            const SizedBox(
+                              height: 18,
                             ),
-                            borderRadius:
-                                BorderRadius
-                                    .circular(
-                              14,
-                            ),
-                          ),
-                          child:
-                              const Text(
-                            'Prototype mode: the development reset code is shown directly in the app. A production release would send it securely by email.',
-                            style:
-                                TextStyle(
-                              fontSize: 12,
-                              height: 1.4,
-                              color:
-                                  textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
+                          ],
 
-                      const SizedBox(
-                        height: 26,
+                          _resetCard(),
+                        ],
                       ),
-
-                      const Text(
-                        'Reset Code',
-                        style:
-                            TextStyle(
-                          fontSize: 14,
-                          fontWeight:
-                              FontWeight
-                                  .w600,
-                          color:
-                              textPrimary,
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 8,
-                      ),
-
-                      TextFormField(
-                        controller:
-                            resetCodeController,
-                        validator:
-                            _validateResetCode,
-                        keyboardType:
-                            TextInputType
-                                .number,
-                        textInputAction:
-                            TextInputAction
-                                .next,
-                        decoration:
-                            _fieldDecoration(
-                          hint:
-                              'Enter 6-digit code',
-                          icon: Icons
-                              .pin_outlined,
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 18,
-                      ),
-
-                      const Text(
-                        'New Password',
-                        style:
-                            TextStyle(
-                          fontSize: 14,
-                          fontWeight:
-                              FontWeight
-                                  .w600,
-                          color:
-                              textPrimary,
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 8,
-                      ),
-
-                      TextFormField(
-                        controller:
-                            newPasswordController,
-                        validator:
-                            _validatePassword,
-                        obscureText:
-                            obscureNewPassword,
-                        textInputAction:
-                            TextInputAction
-                                .next,
-                        decoration:
-                            _fieldDecoration(
-                          hint:
-                              'Enter new password',
-                          icon: Icons
-                              .lock_outline_rounded,
-                          suffixIcon:
-                              IconButton(
-                            onPressed: () {
-                              setState(
-                                () {
-                                  obscureNewPassword =
-                                      !obscureNewPassword;
-                                },
-                              );
-                            },
-                            icon: Icon(
-                              obscureNewPassword
-                                  ? Icons
-                                      .visibility_outlined
-                                  : Icons
-                                      .visibility_off_outlined,
-                              size: 20,
-                              color:
-                                  textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 18,
-                      ),
-
-                      const Text(
-                        'Confirm Password',
-                        style:
-                            TextStyle(
-                          fontSize: 14,
-                          fontWeight:
-                              FontWeight
-                                  .w600,
-                          color:
-                              textPrimary,
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 8,
-                      ),
-
-                      TextFormField(
-                        controller:
-                            confirmPasswordController,
-                        validator:
-                            _validateConfirmPassword,
-                        obscureText:
-                            obscureConfirmPassword,
-                        textInputAction:
-                            TextInputAction
-                                .done,
-                        onFieldSubmitted:
-                            (_) {
-                          _resetPassword();
-                        },
-                        decoration:
-                            _fieldDecoration(
-                          hint:
-                              'Confirm new password',
-                          icon: Icons
-                              .lock_outline_rounded,
-                          suffixIcon:
-                              IconButton(
-                            onPressed: () {
-                              setState(
-                                () {
-                                  obscureConfirmPassword =
-                                      !obscureConfirmPassword;
-                                },
-                              );
-                            },
-                            icon: Icon(
-                              obscureConfirmPassword
-                                  ? Icons
-                                      .visibility_outlined
-                                  : Icons
-                                      .visibility_off_outlined,
-                              size: 20,
-                              color:
-                                  textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 26,
-                      ),
-
-                      SizedBox(
-                        height: 54,
-                        child:
-                            ElevatedButton(
-                          onPressed:
-                              _isResetting
-                                  ? null
-                                  : _resetPassword,
-                          style:
-                              ElevatedButton
-                                  .styleFrom(
-                            backgroundColor:
-                                primaryBlue,
-                            foregroundColor:
-                                Colors.white,
-                            elevation: 0,
-                            shape:
-                                RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius
-                                      .circular(
-                                16,
-                              ),
-                            ),
-                          ),
-                          child:
-                              _isResetting
-                                  ? const SizedBox(
-                                      width:
-                                          20,
-                                      height:
-                                          20,
-                                      child:
-                                          CircularProgressIndicator(
-                                        strokeWidth:
-                                            2,
-                                        color:
-                                            Colors.white,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Reset Password',
-                                      style:
-                                          TextStyle(
-                                        fontSize:
-                                            15,
-                                        fontWeight:
-                                            FontWeight
-                                                .w700,
-                                      ),
-                                    ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _topBar() {
+    return Row(
+      children: [
+        _circleIconButton(
+          icon: Icons.arrow_back_rounded,
+          tooltip: 'Back',
+          onTap: () {
+            Navigator.pop(context);
+          },
         ),
+
+        const Spacer(),
+
+        Container(
+          padding:
+              const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 7,
+          ),
+          decoration: BoxDecoration(
+            color:
+                LinkRideColors.softBlue,
+            borderRadius:
+                BorderRadius.circular(
+              LinkRideRadius.pill,
+            ),
+          ),
+          child: const Row(
+            mainAxisSize:
+                MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.security_rounded,
+                size: 15,
+                color:
+                    LinkRideColors.primaryBlue,
+              ),
+              SizedBox(width: 6),
+              Text(
+                'Secure reset',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight:
+                      FontWeight.w700,
+                  color:
+                      LinkRideColors.primaryBlue,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _resetHeader() {
+    return Column(
+      children: [
+        Container(
+          width: 88,
+          height: 88,
+          decoration: BoxDecoration(
+            gradient:
+                LinkRideGradients.primarySoft,
+            borderRadius:
+                BorderRadius.circular(26),
+            border: Border.all(
+              color:
+                  LinkRideColors.border,
+            ),
+            boxShadow:
+                LinkRideShadows.soft,
+          ),
+          child: const Icon(
+            Icons.password_rounded,
+            size: 38,
+            color:
+                LinkRideColors.primaryBlue,
+          ),
+        ),
+
+        const SizedBox(height: 22),
+
+        const Text(
+          'Create a new password',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 29,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.7,
+            color:
+                LinkRideColors.primaryBlue,
+          ),
+        ),
+
+        const SizedBox(height: 9),
+
+        Text(
+          'Use the one-time reset code for ${widget.email} and choose a new password.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            color:
+                LinkRideColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _prototypeNotice() {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color:
+            LinkRideColors.warningSoft,
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.medium,
+        ),
+        border: Border.all(
+          color:
+              LinkRideColors.warning
+                  .withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons
+                  .science_outlined,
+              size: 19,
+              color:
+                  LinkRideColors.warning,
+            ),
+          ),
+
+          SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Prototype mode',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'The development reset code is provided directly by the prototype. A production release would deliver the reset code through a secure recovery channel.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _resetCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: LinkRideColors.surface,
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.extraLarge,
+        ),
+        border: Border.all(
+          color: LinkRideColors.border,
+        ),
+        boxShadow:
+            LinkRideShadows.soft,
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Reset details',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight:
+                  FontWeight.w800,
+              color:
+                  LinkRideColors.textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          const Text(
+            'Enter your reset code and choose a password you can remember.',
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color:
+                  LinkRideColors.textSecondary,
+            ),
+          ),
+
+          const SizedBox(height: 22),
+
+          _fieldLabel('Reset code'),
+
+          const SizedBox(height: 8),
+
+          TextFormField(
+            controller:
+                resetCodeController,
+            validator:
+                _validateResetCode,
+            keyboardType:
+                TextInputType.number,
+            textInputAction:
+                TextInputAction.next,
+            maxLength: 6,
+            decoration:
+                const InputDecoration(
+              hintText:
+                  'Enter 6-digit code',
+              counterText: '',
+              prefixIcon: Icon(
+                Icons.pin_outlined,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          _fieldLabel('New password'),
+
+          const SizedBox(height: 8),
+
+          TextFormField(
+            controller:
+                newPasswordController,
+            validator:
+                _validatePassword,
+            obscureText:
+                obscureNewPassword,
+            textInputAction:
+                TextInputAction.next,
+            autofillHints: const [
+              AutofillHints.newPassword,
+            ],
+            decoration: InputDecoration(
+              hintText:
+                  'Enter new password',
+              prefixIcon: const Icon(
+                Icons.lock_outline_rounded,
+              ),
+              suffixIcon: IconButton(
+                tooltip:
+                    obscureNewPassword
+                        ? 'Show password'
+                        : 'Hide password',
+                onPressed: () {
+                  setState(() {
+                    obscureNewPassword =
+                        !obscureNewPassword;
+                  });
+                },
+                icon: Icon(
+                  obscureNewPassword
+                      ? Icons
+                          .visibility_outlined
+                      : Icons
+                          .visibility_off_outlined,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 9),
+
+          Container(
+            padding:
+                const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
+            decoration: BoxDecoration(
+              color:
+                  LinkRideColors.surfaceSoft,
+              borderRadius:
+                  BorderRadius.circular(12),
+              border: Border.all(
+                color:
+                    LinkRideColors.border,
+              ),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons
+                      .verified_user_outlined,
+                  size: 16,
+                  color:
+                      LinkRideColors.linkGreen,
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Your new password must contain at least 8 characters.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color:
+                          LinkRideColors
+                              .textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          _fieldLabel(
+            'Confirm password',
+          ),
+
+          const SizedBox(height: 8),
+
+          TextFormField(
+            controller:
+                confirmPasswordController,
+            validator:
+                _validateConfirmPassword,
+            obscureText:
+                obscureConfirmPassword,
+            textInputAction:
+                TextInputAction.done,
+            autofillHints: const [
+              AutofillHints.newPassword,
+            ],
+            onFieldSubmitted: (_) {
+              _resetPassword();
+            },
+            decoration: InputDecoration(
+              hintText:
+                  'Re-enter new password',
+              prefixIcon: const Icon(
+                Icons.lock_reset_outlined,
+              ),
+              suffixIcon: IconButton(
+                tooltip:
+                    obscureConfirmPassword
+                        ? 'Show password'
+                        : 'Hide password',
+                onPressed: () {
+                  setState(() {
+                    obscureConfirmPassword =
+                        !obscureConfirmPassword;
+                  });
+                },
+                icon: Icon(
+                  obscureConfirmPassword
+                      ? Icons
+                          .visibility_outlined
+                      : Icons
+                          .visibility_off_outlined,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 26),
+
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed:
+                  _isResetting
+                      ? null
+                      : _resetPassword,
+              child: AnimatedSwitcher(
+                duration:
+                    const Duration(
+                  milliseconds: 180,
+                ),
+                child: _isResetting
+                    ? const SizedBox(
+                        key: ValueKey(
+                          'reset-password-progress',
+                        ),
+                        width: 20,
+                        height: 20,
+                        child:
+                            CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Row(
+                        key: ValueKey(
+                          'reset-password-label',
+                        ),
+                        mainAxisAlignment:
+                            MainAxisAlignment
+                                .center,
+                        children: [
+                          Text(
+                            'Reset Password',
+                          ),
+                          SizedBox(width: 8),
+                          Icon(
+                            Icons
+                                .check_rounded,
+                            size: 19,
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fieldLabel(
+    String label,
+  ) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 13.5,
+        fontWeight: FontWeight.w700,
+        color:
+            LinkRideColors.textPrimary,
+      ),
+    );
+  }
+
+  Widget _circleIconButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color:
+            LinkRideColors.surface,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder:
+              const CircleBorder(),
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color:
+                    LinkRideColors.border,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 21,
+              color:
+                  LinkRideColors.primaryBlue,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _backgroundCircle({
+    required double size,
+    required Color color,
+  }) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
       ),
     );
   }

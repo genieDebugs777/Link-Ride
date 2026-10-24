@@ -1,26 +1,24 @@
 import 'package:flutter/material.dart';
-import '../services/notification_preferences_service.dart';
 
-class NotificationPreferencesScreen extends StatefulWidget {
+import '../services/notification_preferences_service.dart';
+import '../theme/link_ride_theme.dart';
+
+class NotificationPreferencesScreen
+    extends StatefulWidget {
   const NotificationPreferencesScreen({
     super.key,
   });
 
   @override
-  State<NotificationPreferencesScreen> createState() =>
-      _NotificationPreferencesScreenState();
+  State<NotificationPreferencesScreen>
+      createState() =>
+          _NotificationPreferencesScreenState();
 }
 
 class _NotificationPreferencesScreenState
     extends State<NotificationPreferencesScreen> {
-  static const Color primaryBlue = Color(0xFF003F73);
-  static const Color linkGreen = Color(0xFF4A9B45);
-  static const Color background = Color(0xFFF7F9FB);
-  static const Color textPrimary = Color(0xFF17212B);
-  static const Color textSecondary = Color(0xFF667085);
-  static const Color cardBorder = Color(0xFFE4E9EE);
-
-  final NotificationPreferencesService _preferencesService =
+  final NotificationPreferencesService
+      _preferencesService =
       NotificationPreferencesService();
 
   bool disruptionAlerts = true;
@@ -40,7 +38,8 @@ class _NotificationPreferencesScreenState
   Future<void> _loadPreferences() async {
     try {
       final Map<String, bool> preferences =
-          await _preferencesService.getPreferences();
+          await _preferencesService
+              .getPreferences();
 
       if (!mounted) {
         return;
@@ -48,16 +47,24 @@ class _NotificationPreferencesScreenState
 
       setState(() {
         disruptionAlerts =
-            preferences['disruptionAlerts'] ?? true;
+            preferences[
+                    'disruptionAlerts'] ??
+                true;
 
         journeyUpdates =
-            preferences['journeyUpdates'] ?? true;
+            preferences[
+                    'journeyUpdates'] ??
+                true;
 
         ticketPaymentUpdates =
-            preferences['ticketPaymentUpdates'] ?? true;
+            preferences[
+                    'ticketPaymentUpdates'] ??
+                true;
 
         generalNotifications =
-            preferences['generalNotifications'] ?? false;
+            preferences[
+                    'generalNotifications'] ??
+                false;
 
         isLoading = false;
       });
@@ -70,7 +77,8 @@ class _NotificationPreferencesScreenState
         isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'Unable to load notification preferences.',
@@ -81,16 +89,25 @@ class _NotificationPreferencesScreenState
   }
 
   Future<void> _savePreferences() async {
+    if (isSaving) {
+      return;
+    }
+
     setState(() {
       isSaving = true;
     });
 
     try {
-      await _preferencesService.savePreferences(
-        disruptionAlerts: disruptionAlerts,
-        journeyUpdates: journeyUpdates,
-        ticketPaymentUpdates: ticketPaymentUpdates,
-        generalNotifications: generalNotifications,
+      await _preferencesService
+          .savePreferences(
+        disruptionAlerts:
+            disruptionAlerts,
+        journeyUpdates:
+            journeyUpdates,
+        ticketPaymentUpdates:
+            ticketPaymentUpdates,
+        generalNotifications:
+            generalNotifications,
       );
 
       if (!mounted) {
@@ -101,7 +118,8 @@ class _NotificationPreferencesScreenState
         isSaving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'Notification preferences saved successfully.',
@@ -117,7 +135,8 @@ class _NotificationPreferencesScreenState
         isSaving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'Unable to save notification preferences.',
@@ -130,187 +149,190 @@ class _NotificationPreferencesScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor:
+          LinkRideColors.background,
       appBar: AppBar(
-        backgroundColor: background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
+          tooltip: 'Back',
+          onPressed: () =>
+              Navigator.pop(context),
           icon: const Icon(
             Icons.arrow_back_rounded,
-            color: primaryBlue,
           ),
         ),
         title: const Text(
           'Notification Preferences',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: primaryBlue,
-          ),
         ),
       ),
       body: SafeArea(
         top: false,
         child: isLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                  color: primaryBlue,
-                ),
-              )
+            ? _loadingView()
             : SingleChildScrollView(
                 padding:
-                    const EdgeInsets.fromLTRB(22, 16, 22, 30),
+                    const EdgeInsets
+                        .fromLTRB(
+                  20,
+                  14,
+                  20,
+                  30,
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
                   children: [
-                    const Text(
-                      'Stay informed',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: textPrimary,
-                      ),
+                    _headerCard(),
+
+                    const SizedBox(
+                      height: 24,
                     ),
 
-                    const SizedBox(height: 6),
-
-                    const Text(
-                      'Choose which Link Ride updates you would '
-                      'like to receive.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.4,
-                        color: textSecondary,
-                      ),
+                    _sectionTitle(
+                      'TRAVEL ALERTS',
                     ),
 
-                    const SizedBox(height: 26),
-
-                    _sectionTitle('TRAVEL ALERTS'),
-
-                    _card(
-                      child: Column(
-                        children: [
-                          _notificationOption(
-                            icon: Icons.warning_amber_rounded,
-                            title: 'Service disruption alerts',
-                            subtitle:
-                                'Delays, cancellations and route disruptions affecting transport services.',
-                            value: disruptionAlerts,
-                            onChanged: (value) {
-                              setState(() {
-                                disruptionAlerts = value;
-                              });
-                            },
-                          ),
-
-                          _divider(),
-
-                          _notificationOption(
-                            icon: Icons.route_rounded,
-                            title: 'Journey updates',
-                            subtitle:
-                                'Important changes and information about your planned journeys.',
-                            value: journeyUpdates,
-                            onChanged: (value) {
-                              setState(() {
-                                journeyUpdates = value;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
+                    _preferenceGroup(
+                      children: [
+                        _notificationOption(
+                          icon: Icons
+                              .warning_amber_rounded,
+                          accent:
+                              LinkRideColors
+                                  .warning,
+                          title:
+                              'Service disruption alerts',
+                          subtitle:
+                              'Delays, cancellations and route disruptions affecting transport services.',
+                          value:
+                              disruptionAlerts,
+                          onChanged:
+                              (value) {
+                            setState(() {
+                              disruptionAlerts =
+                                  value;
+                            });
+                          },
+                        ),
+                        _divider(),
+                        _notificationOption(
+                          icon:
+                              Icons.route_rounded,
+                          accent:
+                              LinkRideColors
+                                  .primaryBlue,
+                          title:
+                              'Journey updates',
+                          subtitle:
+                              'Important changes and information about your planned journeys.',
+                          value:
+                              journeyUpdates,
+                          onChanged:
+                              (value) {
+                            setState(() {
+                              journeyUpdates =
+                                  value;
+                            });
+                          },
+                        ),
+                      ],
                     ),
 
-                    const SizedBox(height: 24),
-
-                    _sectionTitle('ACCOUNT & SERVICE'),
-
-                    _card(
-                      child: Column(
-                        children: [
-                          _notificationOption(
-                            icon: Icons.confirmation_number_outlined,
-                            title: 'Ticket & payment updates',
-                            subtitle:
-                                'Payment confirmations, failures and digital ticket information.',
-                            value: ticketPaymentUpdates,
-                            onChanged: (value) {
-                              setState(() {
-                                ticketPaymentUpdates = value;
-                              });
-                            },
-                          ),
-
-                          _divider(),
-
-                          _notificationOption(
-                            icon: Icons.notifications_outlined,
-                            title: 'General notifications',
-                            subtitle:
-                                'Non-critical Link Ride service information and app announcements.',
-                            value: generalNotifications,
-                            onChanged: (value) {
-                              setState(() {
-                                generalNotifications = value;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
+                    const SizedBox(
+                      height: 24,
                     ),
 
-                    const SizedBox(height: 24),
+                    _sectionTitle(
+                      'ACCOUNT & SERVICE',
+                    ),
+
+                    _preferenceGroup(
+                      children: [
+                        _notificationOption(
+                          icon: Icons
+                              .confirmation_number_outlined,
+                          accent:
+                              LinkRideColors
+                                  .linkGreen,
+                          title:
+                              'Ticket & payment updates',
+                          subtitle:
+                              'Payment confirmations, failures and digital ticket information.',
+                          value:
+                              ticketPaymentUpdates,
+                          onChanged:
+                              (value) {
+                            setState(() {
+                              ticketPaymentUpdates =
+                                  value;
+                            });
+                          },
+                        ),
+                        _divider(),
+                        _notificationOption(
+                          icon: Icons
+                              .notifications_outlined,
+                          accent:
+                              const Color(
+                            0xFF6C63B8,
+                          ),
+                          title:
+                              'General notifications',
+                          subtitle:
+                              'Non-critical Link Ride service information and app announcements.',
+                          value:
+                              generalNotifications,
+                          onChanged:
+                              (value) {
+                            setState(() {
+                              generalNotifications =
+                                  value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(
+                      height: 22,
+                    ),
 
                     _informationCard(),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(
+                      height: 24,
+                    ),
 
                     SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton.icon(
+                      width:
+                          double.infinity,
+                      child:
+                          FilledButton.icon(
                         onPressed:
-                            isSaving ? null : _savePreferences,
+                            isSaving
+                                ? null
+                                : _savePreferences,
                         icon: isSaving
                             ? const SizedBox(
-                                width: 19,
-                                height: 19,
+                                width: 18,
+                                height: 18,
                                 child:
                                     CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
+                                  strokeWidth:
+                                      2,
+                                  color:
+                                      Colors.white,
                                 ),
                               )
                             : const Icon(
-                                Icons.save_outlined,
-                                size: 20,
+                                Icons
+                                    .save_outlined,
+                                size: 18,
                               ),
                         label: Text(
                           isSaving
                               ? 'Saving...'
                               : 'Save Preferences',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryBlue,
-                          disabledBackgroundColor:
-                              primaryBlue.withValues(
-                            alpha: 0.65,
-                          ),
-                          foregroundColor: Colors.white,
-                          disabledForegroundColor:
-                              Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(16),
-                          ),
                         ),
                       ),
                     ),
@@ -321,65 +343,246 @@ class _NotificationPreferencesScreenState
     );
   }
 
+  Widget _headerCard() {
+    final int enabledCount = [
+      disruptionAlerts,
+      journeyUpdates,
+      ticketPaymentUpdates,
+      generalNotifications,
+    ].where((value) => value).length;
+
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient:
+            LinkRideGradients.primarySoft,
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.extraLarge,
+        ),
+        border: Border.all(
+          color:
+              LinkRideColors.primaryBlue
+                  .withValues(
+            alpha: 0.08,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration:
+                const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.tune_rounded,
+              size: 24,
+              color:
+                  LinkRideColors
+                      .primaryBlue,
+            ),
+          ),
+
+          const SizedBox(width: 13),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Stay informed',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  '$enabledCount of 4 notification categories enabled',
+                  style:
+                      const TextStyle(
+                    fontSize: 12,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _preferenceGroup({
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration:
+          LinkRideDecorations.card(),
+      child: ClipRRect(
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.large,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: Column(
+            children: children,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _notificationOption({
     required IconData icon,
+    required Color accent,
     required String title,
     required String subtitle,
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return SwitchListTile(
-      value: value,
-      activeThumbColor: linkGreen,
-      secondary: _iconBox(icon),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: textPrimary,
+    return InkWell(
+      onTap: () {
+        onChanged(!value);
+      },
+      child: Padding(
+        padding:
+            const EdgeInsets.fromLTRB(
+          15,
+          14,
+          12,
+          14,
+        ),
+        child: Row(
+          crossAxisAlignment:
+              CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration:
+                  BoxDecoration(
+                color:
+                    accent.withValues(
+                  alpha: 0.09,
+                ),
+                borderRadius:
+                    BorderRadius.circular(
+                  14,
+                ),
+              ),
+              child: Icon(
+                icon,
+                size: 21,
+                color: accent,
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style:
+                        const TextStyle(
+                      fontSize: 14,
+                      fontWeight:
+                          FontWeight.w800,
+                      color:
+                          LinkRideColors
+                              .textPrimary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    subtitle,
+                    style:
+                        const TextStyle(
+                      fontSize: 11.5,
+                      height: 1.4,
+                      color:
+                          LinkRideColors
+                              .textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            Switch(
+              value: value,
+              onChanged: onChanged,
+            ),
+          ],
         ),
       ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Text(
-          subtitle,
-          style: const TextStyle(
-            fontSize: 11.5,
-            height: 1.35,
-            color: textSecondary,
-          ),
-        ),
-      ),
-      onChanged: onChanged,
     );
   }
 
   Widget _informationCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding:
+          const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF3F8),
-        borderRadius: BorderRadius.circular(16),
+        color:
+            LinkRideColors.softBlue,
+        borderRadius:
+            BorderRadius.circular(18),
+        border: Border.all(
+          color:
+              LinkRideColors.primaryBlue
+                  .withValues(
+            alpha: 0.08,
+          ),
+        ),
       ),
       child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.info_outline_rounded,
             size: 20,
-            color: primaryBlue,
+            color:
+                LinkRideColors
+                    .primaryBlue,
           ),
-          SizedBox(width: 12),
+          SizedBox(width: 11),
           Expanded(
             child: Text(
-              'Critical account or security information may still '
-              'be shown when necessary, regardless of these preferences.',
+              'Critical account or security information may still be shown when necessary, regardless of these preferences.',
               style: TextStyle(
                 fontSize: 12,
                 height: 1.45,
-                color: textSecondary,
+                color:
+                    LinkRideColors
+                        .textSecondary,
               ),
             ),
           ),
@@ -388,64 +591,26 @@ class _NotificationPreferencesScreenState
     );
   }
 
-  Widget _iconBox(IconData icon) {
-    return Container(
-      width: 43,
-      height: 43,
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAF3F8),
-        borderRadius: BorderRadius.circular(13),
-      ),
-      child: Icon(
-        icon,
-        size: 21,
-        color: primaryBlue,
-      ),
-    );
-  }
-
-  Widget _card({
-    required Widget child,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: cardBorder,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color:
-                Colors.black.withValues(alpha: 0.018),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Material(
-          color: Colors.transparent,
-          child: child,
-        ),
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String title) {
+  Widget _sectionTitle(
+    String title,
+  ) {
     return Padding(
-      padding: const EdgeInsets.only(
-        left: 4,
+      padding:
+          const EdgeInsets.only(
+        left: 3,
         bottom: 9,
       ),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
+        style:
+            const TextStyle(
+          fontSize: 10.5,
+          fontWeight:
+              FontWeight.w800,
           letterSpacing: 1.1,
-          color: textSecondary,
+          color:
+              LinkRideColors
+                  .textMuted,
         ),
       ),
     );
@@ -453,11 +618,44 @@ class _NotificationPreferencesScreenState
 
   Widget _divider() {
     return const Padding(
-      padding: EdgeInsets.only(left: 71),
+      padding:
+          EdgeInsets.only(
+        left: 71,
+      ),
       child: Divider(
         height: 1,
         thickness: 1,
-        color: Color(0xFFEEF1F4),
+        color:
+            LinkRideColors.border,
+      ),
+    );
+  }
+
+  Widget _loadingView() {
+    return const Center(
+      child: Column(
+        mainAxisSize:
+            MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(
+            strokeWidth: 2.3,
+            color:
+                LinkRideColors
+                    .primaryBlue,
+          ),
+
+          SizedBox(height: 13),
+
+          Text(
+            'Loading preferences...',
+            style: TextStyle(
+              fontSize: 12.5,
+              color:
+                  LinkRideColors
+                      .textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }

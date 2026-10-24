@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../theme/link_ride_theme.dart';
 import 'home_screen.dart';
 import 'journeys_screen.dart';
 import 'profile_screen.dart';
 import 'tickets_screen.dart';
-
-
-const Color _background = Color(0xFFF7F9FB);
 
 class MainNavigationScreen extends StatefulWidget {
   final String firstName;
@@ -47,87 +45,119 @@ class _MainNavigationScreenState
       HomeScreen(
         firstName: widget.firstName,
       ),
-
       JourneysScreen(
         refreshToken:
             _journeysRefreshToken,
       ),
-
       TicketsScreen(
         refreshToken:
             _ticketsRefreshToken,
       ),
-
       ProfileScreen(
         firstName: widget.firstName,
       ),
     ];
 
     return Scaffold(
-      backgroundColor: _background,
-
+      backgroundColor:
+          LinkRideColors.background,
       body: IndexedStack(
         index: _selectedIndex,
         children: screens,
       ),
+      bottomNavigationBar: _buildNavigationBar(),
+    );
+  }
 
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-
-        backgroundColor: Colors.white,
-
-        indicatorColor:
-            const Color(0xFFE7F1F7),
-
-        elevation: 3,
-
-        onDestinationSelected:
-            _selectTab,
-
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(
-              Icons.home_outlined,
-            ),
-            selectedIcon: Icon(
-              Icons.home_rounded,
-            ),
-            label: 'Home',
+  Widget _buildNavigationBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: LinkRideColors.surface,
+        border: Border(
+          top: BorderSide(
+            color: LinkRideColors.border
+                .withValues(alpha: 0.85),
           ),
-
-          NavigationDestination(
-            icon: Icon(
-              Icons.route_outlined,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.045,
             ),
-            selectedIcon: Icon(
-              Icons.route_rounded,
-            ),
-            label: 'Journeys',
-          ),
-
-          NavigationDestination(
-            icon: Icon(
-              Icons
-                  .confirmation_number_outlined,
-            ),
-            selectedIcon: Icon(
-              Icons
-                  .confirmation_number_rounded,
-            ),
-            label: 'Tickets',
-          ),
-
-          NavigationDestination(
-            icon: Icon(
-              Icons
-                  .person_outline_rounded,
-            ),
-            selectedIcon: Icon(
-              Icons.person_rounded,
-            ),
-            label: 'Profile',
+            blurRadius: 22,
+            offset: const Offset(0, -6),
           ),
         ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            10,
+            4,
+            10,
+            4,
+          ),
+          child: NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected:
+                _selectTab,
+            backgroundColor:
+                Colors.transparent,
+            elevation: 0,
+            height: 68,
+            indicatorColor:
+                LinkRideColors.softBlue,
+            labelBehavior:
+                NavigationDestinationLabelBehavior
+                    .alwaysShow,
+            destinations: const [
+              NavigationDestination(
+                tooltip: 'Home',
+                icon: Icon(
+                  Icons.home_outlined,
+                ),
+                selectedIcon: Icon(
+                  Icons.home_rounded,
+                ),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                tooltip: 'Journeys',
+                icon: Icon(
+                  Icons.route_outlined,
+                ),
+                selectedIcon: Icon(
+                  Icons.route_rounded,
+                ),
+                label: 'Journeys',
+              ),
+              NavigationDestination(
+                tooltip: 'Tickets',
+                icon: Icon(
+                  Icons
+                      .confirmation_number_outlined,
+                ),
+                selectedIcon: Icon(
+                  Icons
+                      .confirmation_number_rounded,
+                ),
+                label: 'Tickets',
+              ),
+              NavigationDestination(
+                tooltip: 'Profile',
+                icon: Icon(
+                  Icons
+                      .person_outline_rounded,
+                ),
+                selectedIcon: Icon(
+                  Icons.person_rounded,
+                ),
+                label: 'Profile',
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

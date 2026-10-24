@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../services/auth_storage.dart';
 import '../services/profile_service.dart';
+import '../theme/link_ride_theme.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> userProfile;
@@ -11,46 +13,65 @@ class EditProfileScreen extends StatefulWidget {
   });
 
   @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
+  State<EditProfileScreen> createState() =>
+      _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
-  static const Color primaryBlue = Color(0xFF003F73);
-  static const Color linkGreen = Color(0xFF4A9B45);
-  static const Color background = Color(0xFFF7F9FB);
-  static const Color textPrimary = Color(0xFF17212B);
-  static const Color textSecondary = Color(0xFF667085);
-  static const Color cardBorder = Color(0xFFE4E9EE);
+class _EditProfileScreenState
+    extends State<EditProfileScreen> {
+  final GlobalKey<FormState> _formKey =
+      GlobalKey<FormState>();
 
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final AuthStorage _authStorage = AuthStorage();
-  final ProfileService _profileService = ProfileService();
+  final AuthStorage _authStorage =
+      AuthStorage();
+
+  final ProfileService _profileService =
+      ProfileService();
 
   bool isSaving = false;
 
-  late final TextEditingController firstNameController;
-  late final TextEditingController lastNameController;
-  late final TextEditingController emailController;
-  late final TextEditingController phoneNumberController;
+  late final TextEditingController
+      firstNameController;
+
+  late final TextEditingController
+      lastNameController;
+
+  late final TextEditingController
+      emailController;
+
+  late final TextEditingController
+      phoneNumberController;
 
   @override
   void initState() {
     super.initState();
 
-    firstNameController = TextEditingController(
-      text: widget.userProfile['firstName']?.toString() ?? '',
+    firstNameController =
+        TextEditingController(
+      text: widget.userProfile['firstName']
+              ?.toString() ??
+          '',
     );
 
-    lastNameController = TextEditingController(
-      text: widget.userProfile['lastName']?.toString() ?? '',
+    lastNameController =
+        TextEditingController(
+      text: widget.userProfile['lastName']
+              ?.toString() ??
+          '',
     );
 
-    emailController = TextEditingController(
-      text: widget.userProfile['email']?.toString() ?? '',
+    emailController =
+        TextEditingController(
+      text: widget.userProfile['email']
+              ?.toString() ??
+          '',
     );
 
-    phoneNumberController = TextEditingController(
-      text: widget.userProfile['phoneNumber']?.toString() ?? '',
+    phoneNumberController =
+        TextEditingController(
+      text: widget.userProfile['phoneNumber']
+              ?.toString() ??
+          '',
     );
   }
 
@@ -76,37 +97,54 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      final String? token = await _authStorage.getToken();
-      final int? userId = await _authStorage.getUserId();
+      final String? token =
+          await _authStorage.getToken();
 
-      if (token == null || userId == null) {
-        throw Exception('No active user session found.');
+      final int? userId =
+          await _authStorage.getUserId();
+
+      if (token == null ||
+          userId == null) {
+        throw Exception(
+          'No active user session found.',
+        );
       }
 
-      final Map<String, dynamic> updatedProfile =
-          await _profileService.updateUserProfile(
+      final Map<String, dynamic>
+          updatedProfile =
+          await _profileService
+              .updateUserProfile(
         userId: userId,
         token: token,
-        firstName: firstNameController.text.trim(),
-        lastName: lastNameController.text.trim(),
-        email: emailController.text.trim(),
-        phoneNumber: phoneNumberController.text.trim(),
+        firstName:
+            firstNameController.text.trim(),
+        lastName:
+            lastNameController.text.trim(),
+        email:
+            emailController.text.trim(),
+        phoneNumber:
+            phoneNumberController.text.trim(),
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       Navigator.pop(
         context,
         updatedProfile,
       );
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         isSaving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'Unable to update your profile. Please try again.',
@@ -119,188 +157,170 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor:
+          LinkRideColors.background,
       appBar: AppBar(
-        backgroundColor: background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
+          tooltip: 'Back',
+          onPressed: () =>
+              Navigator.pop(context),
           icon: const Icon(
             Icons.arrow_back_rounded,
-            color: primaryBlue,
           ),
         ),
         title: const Text(
           'Edit Profile',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: primaryBlue,
-          ),
         ),
       ),
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 16, 22, 30),
+          padding:
+              const EdgeInsets.fromLTRB(
+            20,
+            14,
+            20,
+            30,
+          ),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Update your details',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: textPrimary,
-                  ),
+                _headerCard(),
+
+                const SizedBox(height: 24),
+
+                _sectionTitle(
+                  'PERSONAL DETAILS',
                 ),
 
-                const SizedBox(height: 6),
+                _formCard(
+                  children: [
+                    _buildField(
+                      controller:
+                          firstNameController,
+                      label: 'First name',
+                      icon: Icons
+                          .person_outline_rounded,
+                      textInputAction:
+                          TextInputAction.next,
+                      validator: (value) {
+                        if (value == null ||
+                            value
+                                .trim()
+                                .isEmpty) {
+                          return 'First name is required';
+                        }
 
-                const Text(
-                  'Keep your Link Ride account information accurate and up to date.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.4,
-                    color: textSecondary,
-                  ),
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    _buildField(
+                      controller:
+                          lastNameController,
+                      label: 'Last name',
+                      icon:
+                          Icons.badge_outlined,
+                      textInputAction:
+                          TextInputAction.next,
+                      validator: (value) {
+                        if (value == null ||
+                            value
+                                .trim()
+                                .isEmpty) {
+                          return 'Last name is required';
+                        }
+
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    _buildField(
+                      controller:
+                          emailController,
+                      label: 'Email address',
+                      icon:
+                          Icons.email_outlined,
+                      keyboardType:
+                          TextInputType
+                              .emailAddress,
+                      textInputAction:
+                          TextInputAction.next,
+                      validator: (value) {
+                        final String email =
+                            value?.trim() ?? '';
+
+                        if (email.isEmpty) {
+                          return 'Email address is required';
+                        }
+
+                        if (!email.contains('@') ||
+                            !email.contains('.')) {
+                          return 'Enter a valid email address';
+                        }
+
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    _buildField(
+                      controller:
+                          phoneNumberController,
+                      label: 'Phone number',
+                      icon:
+                          Icons.phone_outlined,
+                      keyboardType:
+                          TextInputType.phone,
+                      textInputAction:
+                          TextInputAction.done,
+                    ),
+                  ],
                 ),
 
-                const SizedBox(height: 26),
+                const SizedBox(height: 22),
 
-                _buildField(
-                  controller: firstNameController,
-                  label: 'First name',
-                  icon: Icons.person_outline_rounded,
-                  textInputAction: TextInputAction.next,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'First name is required';
-                    }
+                _informationCard(),
 
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                _buildField(
-                  controller: lastNameController,
-                  label: 'Last name',
-                  icon: Icons.badge_outlined,
-                  textInputAction: TextInputAction.next,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Last name is required';
-                    }
-
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                _buildField(
-                  controller: emailController,
-                  label: 'Email address',
-                  icon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  validator: (value) {
-                    final String email = value?.trim() ?? '';
-
-                    if (email.isEmpty) {
-                      return 'Email address is required';
-                    }
-
-                    if (!email.contains('@') || !email.contains('.')) {
-                      return 'Enter a valid email address';
-                    }
-
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                _buildField(
-                  controller: phoneNumberController,
-                  label: 'Phone number',
-                  icon: Icons.phone_outlined,
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.done,
-                ),
-
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
 
                 SizedBox(
                   width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton.icon(
-                    onPressed: isSaving ? null : _saveChanges,
-                    icon: const Icon(
-                      Icons.save_outlined,
-                      size: 20,
+                  child:
+                      FilledButton.icon(
+                    onPressed:
+                        isSaving
+                            ? null
+                            : _saveChanges,
+                    icon: isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child:
+                                CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color:
+                                  Colors.white,
+                            ),
+                          )
+                        : const Icon(
+                            Icons
+                                .save_outlined,
+                            size: 18,
+                          ),
+                    label: Text(
+                      isSaving
+                          ? 'Saving...'
+                          : 'Save Changes',
                     ),
-                    label: isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'Save Changes',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBlue,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 18),
-
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: linkGreen.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: const Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.verified_user_outlined,
-                        size: 21,
-                        color: linkGreen,
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Your account status, password and account creation date cannot be changed from this form.',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            height: 1.45,
-                            color: textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],
@@ -311,67 +331,249 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  Widget _headerCard() {
+    final String firstName =
+        firstNameController.text.trim();
+
+    final String lastName =
+        lastNameController.text.trim();
+
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient:
+            LinkRideGradients.primarySoft,
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.extraLarge,
+        ),
+        border: Border.all(
+          color:
+              LinkRideColors.primaryBlue
+                  .withValues(
+            alpha: 0.08,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            alignment:
+                Alignment.center,
+            decoration:
+                const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              _initials(
+                firstName,
+                lastName,
+              ),
+              style:
+                  const TextStyle(
+                fontSize: 20,
+                fontWeight:
+                    FontWeight.w800,
+                color:
+                    LinkRideColors
+                        .primaryBlue,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 13),
+
+          const Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Update your details',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
+                ),
+
+                SizedBox(height: 4),
+
+                Text(
+                  'Keep your Link Ride account information accurate and up to date.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _formCard({
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(16),
+      decoration:
+          LinkRideDecorations.card(),
+      child: Column(
+        children: children,
+      ),
+    );
+  }
+
   Widget _buildField({
-    required TextEditingController controller,
+    required TextEditingController
+        controller,
     required String label,
     required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
+    TextInputType keyboardType =
+        TextInputType.text,
     TextInputAction? textInputAction,
-    String? Function(String?)? validator,
+    String? Function(String?)?
+        validator,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      textInputAction: textInputAction,
+      textInputAction:
+          textInputAction,
       validator: validator,
       style: const TextStyle(
         fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: textPrimary,
+        fontWeight:
+            FontWeight.w600,
+        color:
+            LinkRideColors.textPrimary,
       ),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(
-          color: textSecondary,
-        ),
         prefixIcon: Icon(
           icon,
-          color: primaryBlue,
           size: 21,
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 18,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: cardBorder,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: primaryBlue,
-            width: 1.5,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: Colors.redAccent,
-          ),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: Colors.redAccent,
-            width: 1.5,
-          ),
         ),
       ),
     );
+  }
+
+  Widget _informationCard() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color:
+            LinkRideColors.softGreen,
+        borderRadius:
+            BorderRadius.circular(18),
+        border: Border.all(
+          color:
+              LinkRideColors.linkGreen
+                  .withValues(
+            alpha: 0.10,
+          ),
+        ),
+      ),
+      child: const Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons
+                .verified_user_outlined,
+            size: 20,
+            color:
+                LinkRideColors
+                    .linkGreen,
+          ),
+
+          SizedBox(width: 11),
+
+          Expanded(
+            child: Text(
+              'Your account status, password and account creation date cannot be changed from this form.',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.45,
+                color:
+                    LinkRideColors
+                        .textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(
+    String title,
+  ) {
+    return Padding(
+      padding:
+          const EdgeInsets.only(
+        left: 3,
+        bottom: 9,
+      ),
+      child: Text(
+        title,
+        style:
+            const TextStyle(
+          fontSize: 10.5,
+          fontWeight:
+              FontWeight.w800,
+          letterSpacing: 1.1,
+          color:
+              LinkRideColors.textMuted,
+        ),
+      ),
+    );
+  }
+
+  String _initials(
+    String firstName,
+    String lastName,
+  ) {
+    final String first =
+        firstName.trim();
+
+    final String last =
+        lastName.trim();
+
+    if (first.isEmpty &&
+        last.isEmpty) {
+      return 'U';
+    }
+
+    if (first.isNotEmpty &&
+        last.isNotEmpty) {
+      return '${first[0]}${last[0]}'
+          .toUpperCase();
+    }
+
+    final String source =
+        first.isNotEmpty
+            ? first
+            : last;
+
+    return source[0].toUpperCase();
   }
 }

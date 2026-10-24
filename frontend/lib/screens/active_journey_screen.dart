@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../services/active_journey_service.dart';
 import '../services/auth_storage.dart';
-import '../services/ticket_service.dart';
 import '../services/disruption_service.dart';
+import '../services/ticket_service.dart';
+import '../theme/link_ride_theme.dart';
 
 class ActiveJourneyScreen extends StatefulWidget {
   const ActiveJourneyScreen({
@@ -19,24 +20,6 @@ class ActiveJourneyScreen extends StatefulWidget {
 
 class _ActiveJourneyScreenState
     extends State<ActiveJourneyScreen> {
-  static const Color primaryBlue =
-      Color(0xFF003F73);
-
-  static const Color linkGreen =
-      Color(0xFF4A9B45);
-
-  static const Color background =
-      Color(0xFFF7F9FB);
-
-  static const Color textPrimary =
-      Color(0xFF17212B);
-
-  static const Color textSecondary =
-      Color(0xFF667085);
-
-  static const Color cardBorder =
-      Color(0xFFE4E9EE);
-
   static const Duration simulationTick =
       Duration(seconds: 2);
 
@@ -83,7 +66,6 @@ class _ActiveJourneyScreenState
   @override
   void dispose() {
     _simulationTimer?.cancel();
-
     super.dispose();
   }
 
@@ -143,12 +125,14 @@ class _ActiveJourneyScreenState
             ),
       );
 
-      final Map<String, dynamic> loadedJourney =
+      final Map<String, dynamic>
+          loadedJourney =
           Map<String, dynamic>.from(
         response['journey'] as Map,
       );
 
-      List<Map<String, dynamic>> disruptions = [];
+      List<Map<String, dynamic>>
+          disruptions = [];
 
       final int journeyId =
           _asInt(
@@ -176,15 +160,19 @@ class _ActiveJourneyScreenState
 
       setState(() {
         _journey = loadedJourney;
-
         _legs = loadedLegs;
+
         _journeyDisruptions =
             disruptions;
 
         if (resetSimulation) {
           _currentLegIndex = 0;
-          _elapsedCurrentLegMinutes = 0;
-          _simulationCompleted = false;
+
+          _elapsedCurrentLegMinutes =
+              0;
+
+          _simulationCompleted =
+              false;
         } else if (_legs.isNotEmpty) {
           _currentLegIndex =
               _currentLegIndex.clamp(
@@ -196,7 +184,8 @@ class _ActiveJourneyScreenState
               _currentLegDuration;
 
           _elapsedCurrentLegMinutes =
-              _elapsedCurrentLegMinutes.clamp(
+              _elapsedCurrentLegMinutes
+                  .clamp(
             0,
             duration,
           );
@@ -255,6 +244,7 @@ class _ActiveJourneyScreenState
       _advanceSimulation(
         manual: false,
       );
+
       return;
     }
 
@@ -300,11 +290,14 @@ class _ActiveJourneyScreenState
 
     setState(() {
       _currentLegIndex += 1;
-      _elapsedCurrentLegMinutes = 0;
+
+      _elapsedCurrentLegMinutes =
+          0;
     });
 
     if (mounted) {
-      final Map<String, dynamic> nextLeg =
+      final Map<String, dynamic>
+          nextLeg =
           _legs[_currentLegIndex];
 
       final String nextMode =
@@ -313,12 +306,10 @@ class _ActiveJourneyScreenState
                   .toUpperCase() ??
               'NEXT';
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
-          duration:
-              const Duration(
+          duration: const Duration(
             milliseconds: 900,
           ),
           content: Text(
@@ -360,8 +351,10 @@ class _ActiveJourneyScreenState
         _journey!['journeyId'],
       );
 
-      final Map<String, dynamic> completedTicket =
-          await _ticketService.completeJourney(
+      final Map<String, dynamic>
+          completedTicket =
+          await _ticketService
+              .completeJourney(
         token: token,
         journeyId: journeyId,
       );
@@ -372,7 +365,9 @@ class _ActiveJourneyScreenState
 
       setState(() {
         _isCompletingJourney = false;
+
         _simulationCompleted = true;
+
         _journey = {
           ..._journey!,
           'journeyStatus': 'COMPLETED',
@@ -385,9 +380,8 @@ class _ActiveJourneyScreenState
                   .toUpperCase() ??
               'USED';
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           content: Text(
             manual
@@ -413,9 +407,8 @@ class _ActiveJourneyScreenState
                 '',
               );
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           content: Text(
             'The simulated journey reached the destination, but Link Ride could not save completion. $message',
@@ -512,59 +505,31 @@ class _ActiveJourneyScreenState
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
-
+      backgroundColor:
+          LinkRideColors.background,
       appBar: AppBar(
-        backgroundColor:
-            Colors.white,
-
-        surfaceTintColor:
-            Colors.white,
-
-        elevation: 0,
-
         leading: IconButton(
+          tooltip: 'Back',
           onPressed: () {
-            Navigator.pop(
-              context,
-            );
+            Navigator.pop(context);
           },
-
           icon: const Icon(
             Icons.arrow_back_rounded,
-            color: primaryBlue,
           ),
         ),
-
         title: const Text(
           'Active Journey',
-
-          style: TextStyle(
-            color: primaryBlue,
-            fontSize: 20,
-            fontWeight:
-                FontWeight.w800,
-          ),
         ),
       ),
-
       body: SafeArea(
-        child:
-            _isLoading
-                ? const Center(
-                    child:
-                        CircularProgressIndicator(
-                      color:
-                          primaryBlue,
-                    ),
-                  )
-                : _errorMessage != null
-                    ? _errorView()
-                    : _journeyView(),
+        top: false,
+        child: _isLoading
+            ? _loadingView()
+            : _errorMessage != null
+                ? _errorView()
+                : _journeyView(),
       ),
     );
   }
@@ -606,239 +571,85 @@ class _ActiveJourneyScreenState
     return RefreshIndicator(
       onRefresh: _simulationCompleted
           ? () async {}
-          : () =>
-              _loadActiveJourney(
+          : () {
+              return _loadActiveJourney(
                 resetSimulation: false,
-              ),
-
+              );
+            },
+      color:
+          LinkRideColors.primaryBlue,
       child: ListView(
         physics:
             const AlwaysScrollableScrollPhysics(),
-
         padding:
             const EdgeInsets.fromLTRB(
           20,
-          18,
+          14,
           20,
           30,
         ),
-
         children: [
-          Text(
-            _simulationCompleted
-                ? 'Journey Completed'
-                : 'Journey In Progress',
+          _journeyHeader(),
 
-            style: const TextStyle(
-              fontSize: 26,
-              fontWeight:
-                  FontWeight.w800,
-              letterSpacing: -0.5,
-              color:
-                  primaryBlue,
-            ),
-          ),
-
-          const SizedBox(
-            height: 5,
-          ),
-
-          Text(
-            _simulationCompleted
-                ? 'The journey is persisted as COMPLETED and its ticket has been marked USED.'
-                : _isCompletingJourney
-                    ? 'Destination reached. Saving journey completion...'
-                    : 'Simulated live tracking is running at 2 real seconds per journey minute.',
-
-            style: const TextStyle(
-              fontSize: 13,
-              height: 1.4,
-              color:
-                  textSecondary,
-            ),
-          ),
-
-          const SizedBox(
-            height: 22,
-          ),
+          const SizedBox(height: 18),
 
           if (_journeyDisruptions
               .isNotEmpty) ...[
             _journeyDisruptionWarning(
               _journeyDisruptions,
             ),
-            const SizedBox(
-              height: 16,
-            ),
+
+            const SizedBox(height: 14),
           ],
 
-          Container(
-            width:
-                double.infinity,
-
-            padding:
-                const EdgeInsets.all(
-              18,
-            ),
-
-            decoration:
-                BoxDecoration(
-              color:
-                  Colors.white,
-
-              borderRadius:
-                  BorderRadius
-                      .circular(
-                22,
-              ),
-
-              border:
-                  Border.all(
-                color:
-                    cardBorder,
-              ),
-            ),
-
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Journey #$journeyId',
-
-                        style:
-                            const TextStyle(
-                          fontSize: 15,
-                          fontWeight:
-                              FontWeight
-                                  .w800,
-                          color:
-                              textPrimary,
-                        ),
-                      ),
-                    ),
-
-                    _statusChip(
-                      status,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(
-                  height: 16,
-                ),
-
-                _locationRow(
-                  icon:
-                      Icons
-                          .trip_origin_rounded,
-                  color:
-                      linkGreen,
-                  text:
-                      origin,
-                ),
-
-                Padding(
-                  padding:
-                      const EdgeInsets
-                          .only(
-                    left: 7,
-                  ),
-
-                  child: Container(
-                    width: 2,
-                    height: 20,
-                    color:
-                        cardBorder,
-                  ),
-                ),
-
-                _locationRow(
-                  icon:
-                      Icons
-                          .location_on_rounded,
-                  color:
-                      primaryBlue,
-                  text:
-                      destination,
-                ),
-
-                const SizedBox(
-                  height: 16,
-                ),
-
-                const Divider(
-                  height: 1,
-                  color:
-                      cardBorder,
-                ),
-
-                const SizedBox(
-                  height: 14,
-                ),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _metric(
-                        icon:
-                            Icons
-                                .schedule_rounded,
-                        value:
-                            '$totalDuration min',
-                      ),
-                    ),
-
-                    Expanded(
-                      child: _metric(
-                        icon:
-                            Icons
-                                .payments_outlined,
-                        value:
-                            'R${totalCost.toStringAsFixed(2)}',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          _journeySummaryCard(
+            journeyId: journeyId,
+            status: status,
+            origin: origin,
+            destination: destination,
+            totalDuration:
+                totalDuration,
+            totalCost:
+                totalCost,
           ),
 
-          const SizedBox(
-            height: 20,
-          ),
+          const SizedBox(height: 18),
 
           _simulationProgressCard(),
 
-          const SizedBox(
-            height: 20,
-          ),
+          const SizedBox(height: 18),
 
-          _currentLegCard(),
+          if (_legs.isNotEmpty)
+            _currentLegCard(),
 
-          const SizedBox(
-            height: 20,
-          ),
+          const SizedBox(height: 24),
 
           const Text(
             'Journey Timeline',
-
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 19,
               fontWeight:
                   FontWeight.w800,
+              letterSpacing: -0.2,
               color:
-                  textPrimary,
+                  LinkRideColors
+                      .textPrimary,
             ),
           ),
 
-          const SizedBox(
-            height: 12,
+          const SizedBox(height: 6),
+
+          const Text(
+            'Track each leg of your multimodal journey.',
+            style: TextStyle(
+              fontSize: 12.5,
+              color:
+                  LinkRideColors
+                      .textSecondary,
+            ),
           ),
+
+          const SizedBox(height: 14),
 
           ...List.generate(
             _legs.length,
@@ -846,239 +657,314 @@ class _ActiveJourneyScreenState
                 Padding(
               padding:
                   const EdgeInsets.only(
-                bottom: 12,
+                bottom: 11,
               ),
-
-              child: _timelineLegCard(
+              child:
+                  _timelineLegCard(
                 _legs[index],
                 index,
               ),
             ),
           ),
 
-          const SizedBox(
-            height: 6,
-          ),
+          const SizedBox(height: 5),
 
           _simulationControls(),
 
-          const SizedBox(
-            height: 18,
+          const SizedBox(height: 18),
+
+          _prototypeNotice(),
+        ],
+      ),
+    );
+  }
+
+  Widget _journeyHeader() {
+    final bool completed =
+        _simulationCompleted;
+
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(18),
+      decoration:
+          LinkRideDecorations.blueCard(),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -35,
+            top: -45,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration:
+                  BoxDecoration(
+                color: Colors.white
+                    .withValues(
+                  alpha: 0.06,
+                ),
+                shape: BoxShape.circle,
+              ),
+            ),
           ),
 
-          Container(
-            width:
-                double.infinity,
-
-            padding:
-                const EdgeInsets.all(
-              16,
-            ),
-
-            decoration:
-                BoxDecoration(
-              color:
-                  primaryBlue
+          Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets
+                        .symmetric(
+                  horizontal: 9,
+                  vertical: 5,
+                ),
+                decoration:
+                    BoxDecoration(
+                  color: Colors.white
                       .withValues(
-                alpha: 0.05,
-              ),
-
-              borderRadius:
-                  BorderRadius
-                      .circular(
-                18,
-              ),
-            ),
-
-            child: const Row(
-              crossAxisAlignment:
-                  CrossAxisAlignment
-                      .start,
-
-              children: [
-                Icon(
-                  Icons
-                      .science_outlined,
-                  size: 20,
-                  color:
-                      primaryBlue,
-                ),
-
-                SizedBox(
-                  width: 10,
-                ),
-
-                Expanded(
-                  child: Text(
-                    'Prototype simulation: two real seconds represent one simulated journey minute. Leg progression is driven by persisted estimated durations, not a real GPS feed. Advance Simulation is a demonstration control.',
-
-                    style:
-                        TextStyle(
-                      fontSize: 12,
-                      height: 1.45,
-                      color:
-                          textSecondary,
-                    ),
+                    alpha: 0.10,
+                  ),
+                  borderRadius:
+                      BorderRadius.circular(
+                    LinkRideRadius.pill,
                   ),
                 ),
-              ],
-            ),
+                child: Row(
+                  mainAxisSize:
+                      MainAxisSize.min,
+                  children: [
+                    Icon(
+                      completed
+                          ? Icons
+                              .check_circle_rounded
+                          : Icons
+                              .navigation_rounded,
+                      size: 15,
+                      color: Colors.white,
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    Text(
+                      completed
+                          ? 'JOURNEY COMPLETE'
+                          : 'LIVE JOURNEY',
+                      style:
+                          const TextStyle(
+                        fontSize: 9.8,
+                        fontWeight:
+                            FontWeight.w800,
+                        letterSpacing:
+                            0.7,
+                        color:
+                            Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              Text(
+                completed
+                    ? 'Journey Completed'
+                    : 'Journey In Progress',
+                style:
+                    const TextStyle(
+                  fontSize: 26,
+                  fontWeight:
+                      FontWeight.w800,
+                  letterSpacing: -0.6,
+                  color: Colors.white,
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              Text(
+                completed
+                    ? 'Your journey is persisted as COMPLETED and the linked ticket is marked USED.'
+                    : _isCompletingJourney
+                        ? 'Destination reached. Saving journey completion...'
+                        : 'Live prototype tracking is currently running.',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.45,
+                  color: Colors.white
+                      .withValues(
+                    alpha: 0.76,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-
-  Widget _journeyDisruptionWarning(
-    List<Map<String, dynamic>> disruptions,
-  ) {
-    if (disruptions.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final Map<String, dynamic> disruption =
-        disruptions.first;
-
-    final String title =
-        disruption['title']?.toString() ??
-            'Transport disruption';
-
-    final String description =
-        disruption['description']?.toString() ??
-            'A service disruption is affecting this journey.';
-
-    final String severity =
-        disruption['severity']
-                ?.toString()
-                .toUpperCase() ??
-            'MEDIUM';
-
-    final int routeId =
-        _asInt(
-      disruption['routeId'],
-    );
-
-    final Color warningColor =
-        severity == 'CRITICAL'
-            ? const Color(0xFFD64545)
-            : severity == 'HIGH'
-                ? const Color(0xFFD96A1D)
-                : const Color(0xFFE28A19);
+  Widget _journeySummaryCard({
+    required int journeyId,
+    required String status,
+    required String origin,
+    required String destination,
+    required int totalDuration,
+    required double totalCost,
+  }) {
+    final Color statusColor =
+        _statusColor(status);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: warningColor.withValues(
-          alpha: 0.08,
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: warningColor.withValues(
-            alpha: 0.30,
-          ),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+      decoration:
+          LinkRideDecorations.card(),
+      child: Column(
         children: [
           Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: warningColor.withValues(
-                alpha: 0.12,
+            width: double.infinity,
+            padding:
+                const EdgeInsets.fromLTRB(
+              16,
+              15,
+              16,
+              14,
+            ),
+            decoration:
+                BoxDecoration(
+              color:
+                  statusColor.withValues(
+                alpha: 0.055,
               ),
               borderRadius:
-                  BorderRadius.circular(12),
+                  const BorderRadius.vertical(
+                top: Radius.circular(
+                  LinkRideRadius.large,
+                ),
+              ),
             ),
-            child: Icon(
-              Icons.warning_amber_rounded,
-              color: warningColor,
-              size: 22,
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration:
+                      BoxDecoration(
+                    color:
+                        statusColor.withValues(
+                      alpha: 0.10,
+                    ),
+                    borderRadius:
+                        BorderRadius.circular(
+                      13,
+                    ),
+                  ),
+                  child: Icon(
+                    _simulationCompleted
+                        ? Icons
+                            .check_circle_rounded
+                        : Icons
+                            .route_rounded,
+                    size: 21,
+                    color: statusColor,
+                  ),
+                ),
+
+                const SizedBox(width: 11),
+
+                Expanded(
+                  child: Text(
+                    'Journey #$journeyId',
+                    style:
+                        const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight:
+                          FontWeight.w800,
+                      color:
+                          LinkRideColors
+                              .textPrimary,
+                    ),
+                  ),
+                ),
+
+                _statusChip(status),
+              ],
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+
+          Padding(
+            padding:
+                const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
               children: [
+                _routePoint(
+                  icon: Icons
+                      .trip_origin_rounded,
+                  color:
+                      LinkRideColors.linkGreen,
+                  label: 'FROM',
+                  value: origin,
+                ),
+
+                Padding(
+                  padding:
+                      const EdgeInsets.only(
+                    left: 16,
+                  ),
+                  child: Align(
+                    alignment:
+                        Alignment.centerLeft,
+                    child: Container(
+                      width: 2,
+                      height: 20,
+                      color:
+                          LinkRideColors
+                              .borderStrong,
+                    ),
+                  ),
+                ),
+
+                _routePoint(
+                  icon: Icons
+                      .location_on_rounded,
+                  color:
+                      LinkRideColors.primaryBlue,
+                  label: 'TO',
+                  value: destination,
+                ),
+
+                const SizedBox(height: 16),
+
                 Row(
                   children: [
-                    const Expanded(
-                      child: Text(
-                        'Your journey is affected',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight:
-                              FontWeight.w800,
-                          color: textPrimary,
-                        ),
+                    Expanded(
+                      child: _metricCard(
+                        icon: Icons
+                            .schedule_rounded,
+                        label: 'Duration',
+                        value:
+                            '$totalDuration min',
+                        accent:
+                            LinkRideColors.primaryBlue,
                       ),
                     ),
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: warningColor
-                            .withValues(
-                          alpha: 0.12,
-                        ),
-                        borderRadius:
-                            BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        severity,
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight:
-                              FontWeight.w800,
-                          color: warningColor,
-                        ),
+
+                    const SizedBox(width: 10),
+
+                    Expanded(
+                      child: _metricCard(
+                        icon: Icons
+                            .payments_outlined,
+                        label: 'Fare',
+                        value:
+                            'R${totalCost.toStringAsFixed(2)}',
+                        accent:
+                            LinkRideColors.linkGreen,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  routeId > 0
-                      ? 'Route #$routeId • $title'
-                      : title,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight:
-                        FontWeight.w700,
-                    color: textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    height: 1.4,
-                    color: textSecondary,
-                  ),
-                ),
-                if (disruptions.length > 1) ...[
-                  const SizedBox(height: 5),
-                  Text(
-                    '+${disruptions.length - 1} more active disruption'
-                    '${disruptions.length - 1 == 1 ? '' : 's'} affecting this journey',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight:
-                          FontWeight.w700,
-                      color: warningColor,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -1095,116 +981,129 @@ class _ActiveJourneyScreenState
         _completedSimulationMinutes;
 
     final int remaining =
-        (totalMinutes - elapsed)
-            .clamp(
-      0,
-      totalMinutes,
-    );
+        totalMinutes <= 0
+            ? 0
+            : (totalMinutes - elapsed)
+                .clamp(
+              0,
+              totalMinutes,
+            );
 
     final int percent =
         (_overallProgress * 100)
             .round();
 
     return Container(
-      width:
-          double.infinity,
-
+      width: double.infinity,
       padding:
-          const EdgeInsets.all(
-        18,
-      ),
-
+          const EdgeInsets.all(17),
       decoration:
-          BoxDecoration(
-        color:
-            Colors.white,
-
-        borderRadius:
-            BorderRadius
-                .circular(
-          20,
-        ),
-
-        border:
-            Border.all(
-          color:
-              cardBorder,
-        ),
-      ),
-
+          LinkRideDecorations.card(),
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
-
         children: [
           Row(
             children: [
-              const Expanded(
-                child: Text(
-                  'Overall Journey Progress',
+              Container(
+                width: 42,
+                height: 42,
+                decoration:
+                    const BoxDecoration(
+                  color:
+                      LinkRideColors.softBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons
+                      .timeline_rounded,
+                  size: 21,
+                  color:
+                      LinkRideColors
+                          .primaryBlue,
+                ),
+              ),
 
-                  style:
-                      TextStyle(
-                    fontSize: 15,
-                    fontWeight:
-                        FontWeight
-                            .w800,
-                    color:
-                        textPrimary,
-                  ),
+              const SizedBox(width: 11),
+
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Overall progress',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight:
+                            FontWeight.w800,
+                        color:
+                            LinkRideColors
+                                .textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Live prototype journey simulation',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color:
+                            LinkRideColors
+                                .textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
               Text(
                 '$percent%',
-
                 style:
                     const TextStyle(
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight:
-                      FontWeight
-                          .w800,
+                      FontWeight.w800,
                   color:
-                      primaryBlue,
+                      LinkRideColors
+                          .primaryBlue,
                 ),
               ),
             ],
           ),
 
-          const SizedBox(
-            height: 12,
-          ),
+          const SizedBox(height: 16),
 
           ClipRRect(
             borderRadius:
                 BorderRadius.circular(
-              20,
+              LinkRideRadius.pill,
             ),
-
             child:
                 LinearProgressIndicator(
               value:
                   _overallProgress,
               minHeight: 9,
               backgroundColor:
-                  cardBorder,
+                  LinkRideColors.border,
               color:
-                  primaryBlue,
+                  _simulationCompleted
+                      ? LinkRideColors
+                          .linkGreen
+                      : LinkRideColors
+                          .primaryBlue,
             ),
           ),
 
-          const SizedBox(
-            height: 10,
-          ),
+          const SizedBox(height: 10),
 
           Text(
             '$elapsed of $totalMinutes simulated minutes · $remaining min remaining',
-
             style:
                 const TextStyle(
               fontSize: 11.5,
               color:
-                  textSecondary,
+                  LinkRideColors
+                      .textSecondary,
             ),
           ),
         ],
@@ -1243,109 +1142,88 @@ class _ActiveJourneyScreenState
         (_currentLegProgress * 100)
             .round();
 
+    final Color modeColor =
+        _modeColor(mode);
+
     return Container(
-      width:
-          double.infinity,
-
+      width: double.infinity,
       padding:
-          const EdgeInsets.all(
-        18,
-      ),
-
-      decoration:
-          BoxDecoration(
+          const EdgeInsets.all(17),
+      decoration: BoxDecoration(
         color:
-            Colors.white,
-
+            LinkRideColors.surface,
         borderRadius:
-            BorderRadius
-                .circular(
-          20,
+            BorderRadius.circular(
+          LinkRideRadius.large,
         ),
-
-        border:
-            Border.all(
+        border: Border.all(
           color:
-              primaryBlue.withValues(
-            alpha: 0.25,
+              modeColor.withValues(
+            alpha: 0.28,
           ),
         ),
+        boxShadow:
+            LinkRideShadows.soft,
       ),
-
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
-
         children: [
           Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
-
+                width: 44,
+                height: 44,
                 decoration:
                     BoxDecoration(
                   color:
-                      primaryBlue
-                          .withValues(
-                    alpha: 0.08,
+                      modeColor.withValues(
+                    alpha: 0.10,
                   ),
-
                   borderRadius:
-                      BorderRadius
-                          .circular(
-                    13,
+                      BorderRadius.circular(
+                    14,
                   ),
                 ),
-
                 child: Icon(
-                  _modeIcon(
-                    mode,
-                  ),
-                  color:
-                      primaryBlue,
+                  _modeIcon(mode),
+                  color: modeColor,
+                  size: 22,
                 ),
               ),
 
-              const SizedBox(
-                width: 12,
-              ),
+              const SizedBox(width: 12),
 
               Expanded(
                 child: Column(
                   crossAxisAlignment:
-                      CrossAxisAlignment
-                          .start,
-
+                      CrossAxisAlignment.start,
                   children: [
                     Text(
                       _simulationCompleted
                           ? 'Final Leg Complete'
-                          : 'Current Leg · $mode',
-
+                          : 'Current Leg · ${_formatMode(mode)}',
                       style:
                           const TextStyle(
                         fontSize: 15,
                         fontWeight:
-                            FontWeight
-                                .w800,
+                            FontWeight.w800,
                         color:
-                            textPrimary,
+                            LinkRideColors
+                                .textPrimary,
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 2,
-                    ),
+                    const SizedBox(height: 2),
 
                     Text(
                       'Leg $legOrder of ${_legs.length}',
-
                       style:
                           const TextStyle(
                         fontSize: 11.5,
                         color:
-                            textSecondary,
+                            LinkRideColors
+                                .textSecondary,
                       ),
                     ),
                   ],
@@ -1360,125 +1238,75 @@ class _ActiveJourneyScreenState
             ],
           ),
 
-          const SizedBox(
-            height: 16,
+          const SizedBox(height: 16),
+
+          _simpleRoute(
+            origin: origin,
+            destination:
+                destination,
           ),
 
-          Text(
-            origin,
-
-            style:
-                const TextStyle(
-              fontSize: 13,
-              fontWeight:
-                  FontWeight.w700,
-              color:
-                  textPrimary,
-            ),
-          ),
-
-          const Padding(
-            padding:
-                EdgeInsets.symmetric(
-              vertical: 6,
-            ),
-
-            child: Icon(
-              Icons
-                  .arrow_downward_rounded,
-              size: 17,
-              color:
-                  textSecondary,
-            ),
-          ),
-
-          Text(
-            destination,
-
-            style:
-                const TextStyle(
-              fontSize: 13,
-              fontWeight:
-                  FontWeight.w700,
-              color:
-                  textPrimary,
-            ),
-          ),
-
-          const SizedBox(
-            height: 16,
-          ),
+          const SizedBox(height: 16),
 
           Row(
             children: [
               Expanded(
                 child: Text(
                   '${_elapsedCurrentLegMinutes.clamp(0, duration)} / $duration min',
-
                   style:
                       const TextStyle(
                     fontSize: 12,
                     fontWeight:
-                        FontWeight
-                            .w700,
+                        FontWeight.w700,
                     color:
-                        textPrimary,
+                        LinkRideColors
+                            .textPrimary,
                   ),
                 ),
               ),
 
               Text(
                 '$percent%',
-
-                style:
-                    const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight:
-                      FontWeight
-                          .w800,
-                  color:
-                      primaryBlue,
+                      FontWeight.w800,
+                  color: modeColor,
                 ),
               ),
             ],
           ),
 
-          const SizedBox(
-            height: 8,
-          ),
+          const SizedBox(height: 8),
 
           ClipRRect(
             borderRadius:
                 BorderRadius.circular(
-              20,
+              LinkRideRadius.pill,
             ),
-
             child:
                 LinearProgressIndicator(
               value:
                   _currentLegProgress,
               minHeight: 8,
               backgroundColor:
-                  cardBorder,
-              color:
-                  primaryBlue,
+                  LinkRideColors.border,
+              color: modeColor,
             ),
           ),
 
-          const SizedBox(
-            height: 9,
-          ),
+          const SizedBox(height: 9),
 
           Text(
             _simulationCompleted
                 ? 'Destination reached in the prototype simulation.'
                 : '$_remainingCurrentLegMinutes simulated min remaining',
-
             style:
                 const TextStyle(
               fontSize: 11.5,
               color:
-                  textSecondary,
+                  LinkRideColors
+                      .textSecondary,
             ),
           ),
         ],
@@ -1537,175 +1365,111 @@ class _ActiveJourneyScreenState
                 ? 'CURRENT'
                 : 'UPCOMING';
 
+    final Color modeColor =
+        completed
+            ? LinkRideColors.linkGreen
+            : _modeColor(mode);
+
     return Container(
-      width:
-          double.infinity,
-
+      width: double.infinity,
       padding:
-          const EdgeInsets.all(
-        16,
-      ),
-
-      decoration:
-          BoxDecoration(
+          const EdgeInsets.all(15),
+      decoration: BoxDecoration(
         color:
-            Colors.white,
-
+            LinkRideColors.surface,
         borderRadius:
-            BorderRadius
-                .circular(
-          18,
+            BorderRadius.circular(
+          LinkRideRadius.large,
         ),
-
-        border:
-            Border.all(
-          color:
-              current
-                  ? primaryBlue
-                      .withValues(
-                    alpha: 0.28,
-                  )
-                  : cardBorder,
+        border: Border.all(
+          color: current
+              ? modeColor.withValues(
+                  alpha: 0.30,
+                )
+              : LinkRideColors.border,
         ),
+        boxShadow:
+            current
+                ? LinkRideShadows.soft
+                : const [],
       ),
-
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
-
         children: [
           Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
-
+                width: 40,
+                height: 40,
                 decoration:
                     BoxDecoration(
                   color:
-                      completed
-                          ? linkGreen
-                              .withValues(
-                            alpha: 0.10,
-                          )
-                          : primaryBlue
-                              .withValues(
-                            alpha: 0.08,
-                          ),
-
+                      modeColor.withValues(
+                    alpha: 0.10,
+                  ),
                   borderRadius:
-                      BorderRadius
-                          .circular(
-                    12,
+                      BorderRadius.circular(
+                    13,
                   ),
                 ),
-
                 child: Icon(
                   completed
-                      ? Icons
-                          .check_rounded
-                      : _modeIcon(
-                          mode,
-                        ),
-                  color:
-                      completed
-                          ? linkGreen
-                          : primaryBlue,
+                      ? Icons.check_rounded
+                      : _modeIcon(mode),
+                  color: modeColor,
+                  size: 20,
                 ),
               ),
 
-              const SizedBox(
-                width: 11,
-              ),
+              const SizedBox(width: 11),
 
               Expanded(
                 child: Column(
                   crossAxisAlignment:
-                      CrossAxisAlignment
-                          .start,
-
+                      CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Leg $legOrder · ${mode.toUpperCase()}',
-
+                      'Leg $legOrder · ${_formatMode(mode)}',
                       style:
                           const TextStyle(
                         fontSize: 13.5,
                         fontWeight:
-                            FontWeight
-                                .w800,
+                            FontWeight.w800,
                         color:
-                            textPrimary,
+                            LinkRideColors
+                                .textPrimary,
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 2,
-                    ),
+                    const SizedBox(height: 2),
 
                     Text(
-                      '$duration min · R${cost.toStringAsFixed(2)}',
-
+                      cost <= 0
+                          ? '$duration min'
+                          : '$duration min · R${cost.toStringAsFixed(2)}',
                       style:
                           const TextStyle(
                         fontSize: 11.5,
                         color:
-                            textSecondary,
+                            LinkRideColors
+                                .textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              _smallStateChip(
-                state,
-              ),
+              _smallStateChip(state),
             ],
           ),
 
-          const SizedBox(
-            height: 14,
-          ),
+          const SizedBox(height: 14),
 
-          Text(
-            origin,
-
-            style:
-                const TextStyle(
-              fontSize: 12.5,
-              fontWeight:
-                  FontWeight.w700,
-              color:
-                  textPrimary,
-            ),
-          ),
-
-          const Padding(
-            padding:
-                EdgeInsets.symmetric(
-              vertical: 5,
-            ),
-
-            child: Icon(
-              Icons
-                  .arrow_downward_rounded,
-              size: 16,
-              color:
-                  textSecondary,
-            ),
-          ),
-
-          Text(
-            destination,
-
-            style:
-                const TextStyle(
-              fontSize: 12.5,
-              fontWeight:
-                  FontWeight.w700,
-              color:
-                  textPrimary,
-            ),
+          _simpleRoute(
+            origin: origin,
+            destination:
+                destination,
           ),
         ],
       ),
@@ -1714,96 +1478,76 @@ class _ActiveJourneyScreenState
 
   Widget _simulationControls() {
     return Container(
-      width:
-          double.infinity,
-
+      width: double.infinity,
       padding:
-          const EdgeInsets.all(
-        16,
-      ),
-
+          const EdgeInsets.all(16),
       decoration:
-          BoxDecoration(
-        color:
-            Colors.white,
-
-        borderRadius:
-            BorderRadius
-                .circular(
-          18,
-        ),
-
-        border:
-            Border.all(
-          color:
-              cardBorder,
-        ),
-      ),
-
+          LinkRideDecorations.card(),
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
-
         children: [
-          const Text(
-            'Prototype Simulation Controls',
-
-            style:
-                TextStyle(
-              fontSize: 14,
-              fontWeight:
-                  FontWeight.w800,
-              color:
-                  textPrimary,
-            ),
+          const Row(
+            children: [
+              Icon(
+                Icons
+                    .science_outlined,
+                size: 20,
+                color:
+                    LinkRideColors
+                        .primaryBlue,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Prototype Simulation Controls',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight:
+                      FontWeight.w800,
+                  color:
+                      LinkRideColors
+                          .textPrimary,
+                ),
+              ),
+            ],
           ),
 
-          const SizedBox(
-            height: 4,
-          ),
+          const SizedBox(height: 5),
 
           const Text(
             'Automatic progression continues in the background. Use this control to move immediately to the next leg during a demonstration.',
-
-            style:
-                TextStyle(
+            style: TextStyle(
               fontSize: 11.5,
               height: 1.4,
               color:
-                  textSecondary,
+                  LinkRideColors
+                      .textSecondary,
             ),
           ),
 
-          const SizedBox(
-            height: 14,
-          ),
+          const SizedBox(height: 14),
 
           SizedBox(
-            width:
-                double.infinity,
-
-            height: 46,
-
-            child:
-                ElevatedButton.icon(
+            width: double.infinity,
+            child: FilledButton.icon(
               onPressed:
                   _simulationCompleted ||
                           _isCompletingJourney
                       ? null
                       : () {
                           _advanceSimulation(
-                            manual:
-                                true,
+                            manual: true,
                           );
                         },
-
               icon: _isCompletingJourney
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(
+                      child:
+                          CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color:
+                            Colors.white,
                       ),
                     )
                   : Icon(
@@ -1813,7 +1557,6 @@ class _ActiveJourneyScreenState
                           : Icons
                               .skip_next_rounded,
                     ),
-
               label: Text(
                 _isCompletingJourney
                     ? 'Saving Completion...'
@@ -1821,48 +1564,489 @@ class _ActiveJourneyScreenState
                         ? 'Journey Completed'
                         : (_currentLegIndex >=
                                     _legs.length - 1 &&
+                                _legs.isNotEmpty &&
                                 _elapsedCurrentLegMinutes >=
                                     _currentLegDuration)
                             ? 'Complete Journey'
                             : 'Advance Simulation',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _prototypeNotice() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color:
+            LinkRideColors.softBlue,
+        borderRadius:
+            BorderRadius.circular(18),
+        border: Border.all(
+          color:
+              LinkRideColors.primaryBlue
+                  .withValues(
+            alpha: 0.08,
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: const [
+          Icon(
+            Icons.science_outlined,
+            size: 20,
+            color:
+                LinkRideColors.primaryBlue,
+          ),
+
+          SizedBox(width: 10),
+
+          Expanded(
+            child: Text(
+              'Prototype simulation: two real seconds represent one simulated journey minute. Leg progression uses persisted estimated durations rather than a real GPS feed. Advance Simulation is provided for demonstration.',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.45,
+                color:
+                    LinkRideColors
+                        .textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _journeyDisruptionWarning(
+    List<Map<String, dynamic>> disruptions,
+  ) {
+    if (disruptions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final Map<String, dynamic> disruption =
+        disruptions.first;
+
+    final String title =
+        disruption['title']
+                ?.toString() ??
+            'Transport disruption';
+
+    final String description =
+        disruption['description']
+                ?.toString() ??
+            'A service disruption is affecting this journey.';
+
+    final String severity =
+        disruption['severity']
+                ?.toString()
+                .toUpperCase() ??
+            'MEDIUM';
+
+    final int routeId =
+        _asInt(
+      disruption['routeId'],
+    );
+
+    final Color warningColor =
+        severity == 'CRITICAL'
+            ? LinkRideColors.danger
+            : severity == 'HIGH'
+                ? const Color(
+                    0xFFD96A1D,
+                  )
+                : LinkRideColors.warning;
+
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color:
+            warningColor.withValues(
+          alpha: 0.07,
+        ),
+        borderRadius:
+            BorderRadius.circular(18),
+        border: Border.all(
+          color:
+              warningColor.withValues(
+            alpha: 0.25,
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration:
+                BoxDecoration(
+              color:
+                  warningColor.withValues(
+                alpha: 0.11,
+              ),
+              borderRadius:
+                  BorderRadius.circular(
+                13,
+              ),
+            ),
+            child: Icon(
+              Icons
+                  .warning_amber_rounded,
+              color: warningColor,
+              size: 22,
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Your journey is affected',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight:
+                              FontWeight.w800,
+                          color:
+                              LinkRideColors
+                                  .textPrimary,
+                        ),
+                      ),
+                    ),
+
+                    Container(
+                      padding:
+                          const EdgeInsets
+                              .symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration:
+                          BoxDecoration(
+                        color:
+                            warningColor
+                                .withValues(
+                          alpha: 0.11,
+                        ),
+                        borderRadius:
+                            BorderRadius.circular(
+                          LinkRideRadius
+                              .pill,
+                        ),
+                      ),
+                      child: Text(
+                        severity,
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight:
+                              FontWeight.w800,
+                          color:
+                              warningColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 5),
+
+                Text(
+                  routeId > 0
+                      ? 'Route #$routeId • $title'
+                      : title,
+                  style:
+                      const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight:
+                        FontWeight.w700,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  description,
+                  style:
+                      const TextStyle(
+                    fontSize: 11.5,
+                    height: 1.4,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+
+                if (disruptions.length >
+                    1) ...[
+                  const SizedBox(height: 5),
+
+                  Text(
+                    '+${disruptions.length - 1} more active disruption'
+                    '${disruptions.length - 1 == 1 ? '' : 's'} affecting this journey',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight:
+                          FontWeight.w700,
+                      color: warningColor,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _routePoint({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration:
+              BoxDecoration(
+            color:
+                color.withValues(
+              alpha: 0.09,
+            ),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            size: 17,
+            color: color,
+          ),
+        ),
+
+        const SizedBox(width: 10),
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
                 style:
                     const TextStyle(
+                  fontSize: 9.5,
                   fontWeight:
-                      FontWeight
-                          .w800,
+                      FontWeight.w800,
+                  letterSpacing: 0.7,
+                  color:
+                      LinkRideColors
+                          .textMuted,
                 ),
               ),
 
-              style:
-                  ElevatedButton
-                      .styleFrom(
-                backgroundColor:
-                    primaryBlue,
+              const SizedBox(height: 2),
 
-                disabledBackgroundColor:
-                    primaryBlue
-                        .withValues(
-                  alpha: 0.45,
+              Text(
+                value,
+                style:
+                    const TextStyle(
+                  fontSize: 12.8,
+                  fontWeight:
+                      FontWeight.w700,
+                  color:
+                      LinkRideColors
+                          .textPrimary,
                 ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-                foregroundColor:
-                    Colors.white,
-
-                disabledForegroundColor:
-                    Colors.white,
-
-                elevation: 0,
-
-                shape:
-                    RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius
-                          .circular(
-                    14,
+  Widget _simpleRoute({
+    required String origin,
+    required String destination,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color:
+            LinkRideColors.surfaceSoft,
+        borderRadius:
+            BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons
+                    .trip_origin_rounded,
+                size: 15,
+                color:
+                    LinkRideColors
+                        .linkGreen,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  origin,
+                  style:
+                      const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight:
+                        FontWeight.w700,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
                   ),
                 ),
               ),
+            ],
+          ),
+
+          const Padding(
+            padding:
+                EdgeInsets.symmetric(
+              vertical: 5,
+            ),
+            child: Icon(
+              Icons
+                  .arrow_downward_rounded,
+              size: 15,
+              color:
+                  LinkRideColors
+                      .textMuted,
+            ),
+          ),
+
+          Row(
+            children: [
+              const Icon(
+                Icons
+                    .location_on_rounded,
+                size: 16,
+                color:
+                    LinkRideColors
+                        .primaryBlue,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  destination,
+                  style:
+                      const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight:
+                        FontWeight.w700,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color accent,
+  }) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 11,
+        vertical: 11,
+      ),
+      decoration: BoxDecoration(
+        color:
+            accent.withValues(
+          alpha: 0.055,
+        ),
+        borderRadius:
+            BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 17,
+            color: accent,
+          ),
+
+          const SizedBox(width: 8),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style:
+                      const TextStyle(
+                    fontSize: 10.5,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+
+                const SizedBox(height: 2),
+
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow:
+                      TextOverflow.ellipsis,
+                  style:
+                      const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1873,28 +2057,25 @@ class _ActiveJourneyScreenState
   Widget _statusChip(
     String status,
   ) {
+    final Color color =
+        _statusColor(status);
+
     return Container(
       padding:
-          const EdgeInsets
-              .symmetric(
+          const EdgeInsets.symmetric(
         horizontal: 9,
         vertical: 5,
       ),
-
-      decoration:
-          BoxDecoration(
+      decoration: BoxDecoration(
         color:
-            linkGreen.withValues(
+            color.withValues(
           alpha: 0.10,
         ),
-
         borderRadius:
-            BorderRadius
-                .circular(
-          20,
+            BorderRadius.circular(
+          LinkRideRadius.pill,
         ),
       ),
-
       child: Text(
         status
             .replaceAll(
@@ -1902,14 +2083,11 @@ class _ActiveJourneyScreenState
               ' ',
             )
             .toUpperCase(),
-
-        style:
-            const TextStyle(
-          fontSize: 10,
+        style: TextStyle(
+          fontSize: 9.5,
           fontWeight:
               FontWeight.w800,
-          color:
-              linkGreen,
+          color: color,
         ),
       ),
     );
@@ -1922,120 +2100,67 @@ class _ActiveJourneyScreenState
         state == 'COMPLETED' ||
             state == 'COMPLETE';
 
+    final bool current =
+        state == 'CURRENT';
+
+    final Color color =
+        completed
+            ? LinkRideColors.linkGreen
+            : current
+                ? LinkRideColors.primaryBlue
+                : LinkRideColors.textSecondary;
+
     return Container(
       padding:
-          const EdgeInsets
-              .symmetric(
+          const EdgeInsets.symmetric(
         horizontal: 8,
         vertical: 5,
       ),
-
-      decoration:
-          BoxDecoration(
+      decoration: BoxDecoration(
         color:
-            completed
-                ? linkGreen
-                    .withValues(
-                  alpha: 0.10,
-                )
-                : primaryBlue
-                    .withValues(
-                  alpha: 0.08,
-                ),
-
+            color.withValues(
+          alpha: 0.09,
+        ),
         borderRadius:
-            BorderRadius
-                .circular(
-          20,
+            BorderRadius.circular(
+          LinkRideRadius.pill,
         ),
       ),
-
       child: Text(
         state,
-
-        style:
-            TextStyle(
+        style: TextStyle(
           fontSize: 9,
           fontWeight:
               FontWeight.w800,
-          color:
-              completed
-                  ? linkGreen
-                  : primaryBlue,
+          color: color,
         ),
       ),
     );
   }
 
-  Widget _locationRow({
-    required IconData icon,
-    required Color color,
-    required String text,
-  }) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 17,
-          color:
-              color,
-        ),
-
-        const SizedBox(
-          width: 8,
-        ),
-
-        Expanded(
-          child: Text(
-            text,
-
-            style:
-                const TextStyle(
-              fontSize: 13,
-              fontWeight:
-                  FontWeight.w700,
+  Widget _loadingView() {
+    return const Center(
+      child: Column(
+        mainAxisSize:
+            MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(
+            strokeWidth: 2.3,
+            color:
+                LinkRideColors.primaryBlue,
+          ),
+          SizedBox(height: 13),
+          Text(
+            'Loading active journey...',
+            style: TextStyle(
+              fontSize: 12.5,
               color:
-                  textPrimary,
+                  LinkRideColors
+                      .textSecondary,
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _metric({
-    required IconData icon,
-    required String value,
-  }) {
-    return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.center,
-
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color:
-              primaryBlue,
-        ),
-
-        const SizedBox(
-          width: 6,
-        ),
-
-        Text(
-          value,
-
-          style:
-              const TextStyle(
-            fontSize: 12.5,
-            fontWeight:
-                FontWeight.w700,
-            color:
-                textPrimary,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -2043,70 +2168,132 @@ class _ActiveJourneyScreenState
     return Center(
       child: Padding(
         padding:
-            const EdgeInsets.all(
-          24,
-        ),
-
-        child: Column(
-          mainAxisSize:
-              MainAxisSize.min,
-
-          children: [
-            const Icon(
-              Icons
-                  .error_outline_rounded,
-              size: 50,
-              color:
-                  primaryBlue,
-            ),
-
-            const SizedBox(
-              height: 14,
-            ),
-
-            Text(
-              _errorMessage ??
-                  'Unable to load active journey.',
-
-              textAlign:
-                  TextAlign.center,
-
-              style:
-                  const TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color:
-                    textSecondary,
-              ),
-            ),
-
-            const SizedBox(
-              height: 14,
-            ),
-
-            ElevatedButton.icon(
-              onPressed: () {
-                _loadActiveJourney(
-                  resetSimulation:
-                      true,
-                );
-              },
-
-              icon:
-                  const Icon(
-                Icons
-                    .refresh_rounded,
+            const EdgeInsets.all(24),
+        child: Container(
+          width: double.infinity,
+          padding:
+              const EdgeInsets.all(24),
+          decoration:
+              LinkRideDecorations.card(),
+          child: Column(
+            mainAxisSize:
+                MainAxisSize.min,
+            children: [
+              Container(
+                width: 62,
+                height: 62,
+                decoration:
+                    const BoxDecoration(
+                  color:
+                      LinkRideColors
+                          .dangerSoft,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons
+                      .error_outline_rounded,
+                  size: 29,
+                  color:
+                      LinkRideColors
+                          .danger,
+                ),
               ),
 
-              label:
-                  const Text(
-                'Try Again',
+              const SizedBox(height: 14),
+
+              const Text(
+                'Unable to load active journey',
+                textAlign:
+                    TextAlign.center,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight:
+                      FontWeight.w800,
+                  color:
+                      LinkRideColors
+                          .textPrimary,
+                ),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 6),
+
+              Text(
+                _errorMessage ??
+                    'Unable to load active journey.',
+                textAlign:
+                    TextAlign.center,
+                style:
+                    const TextStyle(
+                  fontSize: 12.5,
+                  height: 1.4,
+                  color:
+                      LinkRideColors
+                          .textSecondary,
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              OutlinedButton.icon(
+                onPressed: () {
+                  _loadActiveJourney(
+                    resetSimulation:
+                        true,
+                  );
+                },
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  size: 18,
+                ),
+                label: const Text(
+                  'Try Again',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Color _statusColor(
+    String status,
+  ) {
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
+        return LinkRideColors.linkGreen;
+
+      case 'IN_PROGRESS':
+        return const Color(
+          0xFF6C63B8,
+        );
+
+      default:
+        return LinkRideColors.primaryBlue;
+    }
+  }
+
+  Color _modeColor(
+    String mode,
+  ) {
+    switch (mode.toUpperCase()) {
+      case 'TRAIN':
+        return LinkRideColors.primaryBlue;
+
+      case 'BUS':
+        return LinkRideColors.linkGreen;
+
+      case 'TAXI':
+        return LinkRideColors.warning;
+
+      case 'WALK':
+        return const Color(
+          0xFF6C63B8,
+        );
+
+      default:
+        return LinkRideColors.textSecondary;
+    }
   }
 
   IconData _modeIcon(
@@ -2130,6 +2317,27 @@ class _ActiveJourneyScreenState
     }
   }
 
+  String _formatMode(
+    String mode,
+  ) {
+    switch (mode.toUpperCase()) {
+      case 'TRAIN':
+        return 'Train';
+
+      case 'BUS':
+        return 'Bus';
+
+      case 'TAXI':
+        return 'Taxi';
+
+      case 'WALK':
+        return 'Walk';
+
+      default:
+        return mode;
+    }
+  }
+
   int _asInt(
     dynamic value,
   ) {
@@ -2142,8 +2350,7 @@ class _ActiveJourneyScreenState
     }
 
     return int.tryParse(
-          value?.toString() ??
-              '',
+          value?.toString() ?? '',
         ) ??
         0;
   }
@@ -2160,8 +2367,7 @@ class _ActiveJourneyScreenState
     }
 
     return double.tryParse(
-          value?.toString() ??
-              '',
+          value?.toString() ?? '',
         ) ??
         0.0;
   }

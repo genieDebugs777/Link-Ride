@@ -3,18 +3,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../services/auth_storage.dart';
-import '../services/stop_search_service.dart';
-import '../services/location_service.dart';
+import '../services/disruption_service.dart';
 import '../services/journey_plan_service.dart';
 import '../services/journey_preferences_service.dart';
+import '../services/location_service.dart';
 import '../services/my_journeys_service.dart';
-import '../services/ticket_service.dart';
-import '../services/disruption_service.dart';
 import '../services/notification_service.dart';
+import '../services/stop_search_service.dart';
+import '../services/ticket_service.dart';
+import '../theme/link_ride_theme.dart';
+
 import 'journey_options_screen.dart';
 import 'my_journeys_screen.dart';
-import 'ticket_screen.dart';
 import 'notifications_screen.dart';
+import 'ticket_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String firstName;
@@ -25,29 +27,33 @@ class HomeScreen extends StatefulWidget {
   });
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() =>
+      _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const Color primaryBlue = Color(0xFF003F73);
-  static const Color linkGreen = Color(0xFF4A9B45);
-  static const Color background = Color(0xFFF7F9FB);
-  static const Color textPrimary = Color(0xFF17212B);
-  static const Color textSecondary = Color(0xFF667085);
-  static const Color cardBorder = Color(0xFFE4E9EE);
+  final AuthStorage _authStorage =
+      AuthStorage();
 
-  final AuthStorage _authStorage = AuthStorage();
-  final StopSearchService _stopSearchService = StopSearchService();
-  final LocationService _locationService = LocationService();
+  final StopSearchService _stopSearchService =
+      StopSearchService();
+
+  final LocationService _locationService =
+      LocationService();
+
   final JourneyPlanService _journeyPlanService =
-    JourneyPlanService();
+      JourneyPlanService();
 
-  final JourneyPreferencesService _journeyPreferencesService =
+  final JourneyPreferencesService
+      _journeyPreferencesService =
       JourneyPreferencesService();
+
   final TicketService _ticketService =
       TicketService();
+
   final MyJourneysService _myJourneysService =
       MyJourneysService();
+
   final DisruptionService _disruptionService =
       DisruptionService();
 
@@ -55,32 +61,38 @@ class _HomeScreenState extends State<HomeScreen> {
       NotificationService();
 
   bool _isPlanningJourney = false;
+
   bool _isLoadingCurrentTicket = true;
   Map<String, dynamic>? _currentTicket;
 
   bool _isLoadingDisruptions = true;
   String? _disruptionError;
-  List<Map<String, dynamic>> _activeDisruptions = [];
+
+  List<Map<String, dynamic>>
+      _activeDisruptions = [];
 
   int _unreadNotificationCount = 0;
 
   final TextEditingController _originController =
       TextEditingController();
 
-  final TextEditingController _destinationController =
+  final TextEditingController
+      _destinationController =
       TextEditingController();
 
   Timer? _originSearchDebounce;
   Timer? _destinationSearchDebounce;
 
-  List<Map<String, dynamic>> _originSuggestions = [];
+  List<Map<String, dynamic>>
+      _originSuggestions = [];
 
   Map<String, dynamic>? _selectedOrigin;
 
   bool _isSearchingOrigin = false;
   String? _originSearchError;
 
-  List<Map<String, dynamic>> _destinationSuggestions = [];
+  List<Map<String, dynamic>>
+      _destinationSuggestions = [];
 
   Map<String, dynamic>? _selectedDestination;
 
@@ -88,75 +100,49 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _destinationSearchError;
 
   bool _isLoadingCurrentLocation = false;
+
   double? _currentLatitude;
   double? _currentLongitude;
+
   String? _currentLocationError;
 
   @override
   void initState() {
     super.initState();
+
     _loadCurrentTicketSummary();
     _loadActiveDisruptions();
     _loadUnreadNotificationCount();
   }
 
-  Future<void> _loadActiveDisruptions() async {
-    if (mounted) {
-      setState(() {
-        _isLoadingDisruptions = true;
-        _disruptionError = null;
-      });
-    }
+  @override
+  void dispose() {
+    _originSearchDebounce?.cancel();
+    _destinationSearchDebounce?.cancel();
 
+    _originController.dispose();
+    _destinationController.dispose();
+
+    super.dispose();
+  }
+
+  // ───────────────── HOME DATA ─────────────────
+
+  Future<void> _refreshHomeData() async {
+    await Future.wait<void>([
+      _loadCurrentTicketSummary(),
+      _loadActiveDisruptions(),
+      _loadUnreadNotificationCount(),
+    ]);
+  }
+
+  Future<void> _loadUnreadNotificationCount()
+      async {
     try {
       final String? token =
           await _authStorage.getToken();
 
       if (token == null || token.isEmpty) {
-        throw Exception(
-          'Your Link Ride session is no longer valid.',
-        );
-      }
-
-      final List<Map<String, dynamic>> disruptions =
-          await _disruptionService.getActiveDisruptions(
-        token: token,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _activeDisruptions = disruptions;
-        _isLoadingDisruptions = false;
-        _disruptionError = null;
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      debugPrint(
-        'Disruption loading error: $error',
-      );
-
-      setState(() {
-        _activeDisruptions = [];
-        _isLoadingDisruptions = false;
-        _disruptionError =
-            'Unable to load live transport updates.';
-      });
-    }
-  }
-
-  Future<void> _loadUnreadNotificationCount() async {
-    try {
-      final String? token =
-          await _authStorage.getToken();
-
-      if (token == null ||
-          token.isEmpty) {
         if (!mounted) {
           return;
         }
@@ -179,8 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       setState(() {
-        _unreadNotificationCount =
-            count;
+        _unreadNotificationCount = count;
       });
     } catch (error) {
       debugPrint(
@@ -203,15 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _refreshHomeData() async {
-    await Future.wait<void>([
-      _loadCurrentTicketSummary(),
-      _loadActiveDisruptions(),
-      _loadUnreadNotificationCount(),
-    ]);
-  }
-
-  Future<void> _loadCurrentTicketSummary() async {
+  Future<void> _loadCurrentTicketSummary()
+      async {
     try {
       final String? token =
           await _authStorage.getToken();
@@ -230,7 +208,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final Map<String, dynamic>? ticket =
-          await _ticketService.getCurrentTicket(
+          await _ticketService
+              .getCurrentTicket(
         token: token,
       );
 
@@ -266,11 +245,11 @@ class _HomeScreenState extends State<HomeScreen> {
             '';
 
     if (status == 'ACTIVE') {
-      return 'View active ticket';
+      return 'Active journey';
     }
 
     if (status == 'ISSUED') {
-      return 'View ready ticket';
+      return 'Ready to use';
     }
 
     return 'No current ticket';
@@ -289,13 +268,15 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'Your Link Ride session is no longer valid.',
           ),
         ),
       );
+
       return;
     }
 
@@ -312,18 +293,21 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (ticket == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'You do not have a current ticket.',
           ),
         ),
       );
+
       return;
     }
 
     final List<Map<String, dynamic>> journeys =
-        await _myJourneysService.getMyJourneys(
+        await _myJourneysService
+            .getMyJourneys(
       token: token,
     );
 
@@ -332,7 +316,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final int journeyId =
-        _asInt(ticket['journeyId']);
+        _asInt(
+      ticket['journeyId'],
+    );
 
     Map<String, dynamic>? journey;
 
@@ -346,13 +332,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (journey == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'Unable to find the journey linked to this ticket.',
           ),
         ),
       );
+
       return;
     }
 
@@ -372,15 +360,59 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _originSearchDebounce?.cancel();
-    _destinationSearchDebounce?.cancel();
+  // ───────────────── DISRUPTIONS ─────────────────
 
-    _originController.dispose();
-    _destinationController.dispose();
+  Future<void> _loadActiveDisruptions()
+      async {
+    if (mounted) {
+      setState(() {
+        _isLoadingDisruptions = true;
+        _disruptionError = null;
+      });
+    }
 
-    super.dispose();
+    try {
+      final String? token =
+          await _authStorage.getToken();
+
+      if (token == null || token.isEmpty) {
+        throw Exception(
+          'Your Link Ride session is no longer valid.',
+        );
+      }
+
+      final List<Map<String, dynamic>>
+          disruptions =
+          await _disruptionService
+              .getActiveDisruptions(
+        token: token,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _activeDisruptions = disruptions;
+        _isLoadingDisruptions = false;
+        _disruptionError = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      debugPrint(
+        'Disruption loading error: $error',
+      );
+
+      setState(() {
+        _activeDisruptions = [];
+        _isLoadingDisruptions = false;
+        _disruptionError =
+            'Unable to load live transport updates.';
+      });
+    }
   }
 
   // ───────────────── ORIGIN SEARCH ─────────────────
@@ -388,7 +420,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onOriginChanged(String value) {
     _originSearchDebounce?.cancel();
 
-    final String query = value.trim();
+    final String query =
+        value.trim();
 
     setState(() {
       _selectedOrigin = null;
@@ -409,27 +442,31 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     _originSearchDebounce = Timer(
-      const Duration(milliseconds: 350),
+      const Duration(
+        milliseconds: 350,
+      ),
       () {
         _searchOrigin(query);
       },
     );
   }
 
-  Future<void> _searchOrigin(String query) async {
+  Future<void> _searchOrigin(
+    String query,
+  ) async {
     try {
       final String? token =
           await _authStorage.getToken();
 
-      if (token == null ||
-          token.isEmpty) {
+      if (token == null || token.isEmpty) {
         throw Exception(
           'No active Link Ride session found.',
         );
       }
 
       final List<Map<String, dynamic>> results =
-          await _stopSearchService.searchStops(
+          await _stopSearchService
+              .searchStops(
         query: query,
         token: token,
       );
@@ -460,6 +497,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _originSuggestions = [];
         _isSearchingOrigin = false;
+
         _originSearchError =
             'Unable to search origin stops right now.';
       });
@@ -470,12 +508,15 @@ class _HomeScreenState extends State<HomeScreen> {
     Map<String, dynamic> stop,
   ) {
     final String stopName =
-        stop['stopName']?.toString() ?? '';
+        stop['stopName']
+                ?.toString() ??
+            '';
 
     setState(() {
       _selectedOrigin = stop;
 
-      _originController.text = stopName;
+      _originController.text =
+          stopName;
 
       _originController.selection =
           TextSelection.collapsed(
@@ -510,10 +551,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ───────────────── DESTINATION SEARCH ─────────────────
 
-  void _onDestinationChanged(String value) {
-    _destinationSearchDebounce?.cancel();
+  void _onDestinationChanged(
+    String value,
+  ) {
+    _destinationSearchDebounce
+        ?.cancel();
 
-    final String query = value.trim();
+    final String query =
+        value.trim();
 
     setState(() {
       _selectedDestination = null;
@@ -523,27 +568,35 @@ class _HomeScreenState extends State<HomeScreen> {
     if (query.length < 2) {
       setState(() {
         _destinationSuggestions = [];
-        _isSearchingDestination = false;
+        _isSearchingDestination =
+            false;
       });
 
       return;
     }
 
     setState(() {
-      _isSearchingDestination = true;
+      _isSearchingDestination =
+          true;
     });
 
-    _destinationSearchDebounce = Timer(
-      const Duration(milliseconds: 350),
+    _destinationSearchDebounce =
+        Timer(
+      const Duration(
+        milliseconds: 350,
+      ),
       () {
         _searchDestination(query);
       },
     );
   }
 
-  Future<void> _searchDestination(String query) async {
+  Future<void> _searchDestination(
+    String query,
+  ) async {
     try {
-      final String? token = await _authStorage.getToken();
+      final String? token =
+          await _authStorage.getToken();
 
       if (token == null || token.isEmpty) {
         throw Exception(
@@ -552,7 +605,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final List<Map<String, dynamic>> results =
-          await _stopSearchService.searchStops(
+          await _stopSearchService
+              .searchStops(
         query: query,
         token: token,
       );
@@ -561,15 +615,19 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      // Ignore an old response if the commuter has already typed
-      // something different.
-      if (_destinationController.text.trim() != query) {
+      if (_destinationController.text
+              .trim() !=
+          query) {
         return;
       }
 
       setState(() {
-        _destinationSuggestions = results;
-        _isSearchingDestination = false;
+        _destinationSuggestions =
+            results;
+
+        _isSearchingDestination =
+            false;
+
         _destinationSearchError = null;
       });
     } catch (error) {
@@ -583,7 +641,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
       setState(() {
         _destinationSuggestions = [];
-        _isSearchingDestination = false;
+
+        _isSearchingDestination =
+            false;
+
         _destinationSearchError =
             'Unable to search destinations right now.';
       });
@@ -594,12 +655,15 @@ class _HomeScreenState extends State<HomeScreen> {
     Map<String, dynamic> stop,
   ) {
     final String stopName =
-        stop['stopName']?.toString() ?? '';
+        stop['stopName']
+                ?.toString() ??
+            '';
 
     setState(() {
       _selectedDestination = stop;
 
-      _destinationController.text = stopName;
+      _destinationController.text =
+          stopName;
 
       _destinationController.selection =
           TextSelection.collapsed(
@@ -608,55 +672,73 @@ class _HomeScreenState extends State<HomeScreen> {
 
       _destinationSuggestions = [];
       _destinationSearchError = null;
-      _isSearchingDestination = false;
+
+      _isSearchingDestination =
+          false;
     });
 
     FocusScope.of(context).unfocus();
   }
 
   void _clearDestination() {
-    _destinationSearchDebounce?.cancel();
+    _destinationSearchDebounce
+        ?.cancel();
 
     setState(() {
       _destinationController.clear();
       _selectedDestination = null;
       _destinationSuggestions = [];
       _destinationSearchError = null;
-      _isSearchingDestination = false;
+
+      _isSearchingDestination =
+          false;
     });
   }
 
   // ───────────────── CURRENT LOCATION ─────────────────
 
-  Future<void> _loadCurrentLocation() async {
+  Future<void> _loadCurrentLocation()
+      async {
     if (_isLoadingCurrentLocation) {
       return;
     }
 
     setState(() {
-      _isLoadingCurrentLocation = true;
+      _isLoadingCurrentLocation =
+          true;
+
       _currentLocationError = null;
     });
 
     try {
       final position =
-          await _locationService.getCurrentPosition();
+          await _locationService
+              .getCurrentPosition();
 
       if (!mounted) {
         return;
       }
 
       setState(() {
-        _currentLatitude = position.latitude;
-        _currentLongitude = position.longitude;
+        _currentLatitude =
+            position.latitude;
+
+        _currentLongitude =
+            position.longitude;
 
         _selectedOrigin = null;
+
         _originController.clear();
+
         _originSuggestions = [];
+
         _originSearchError = null;
+
         _isSearchingOrigin = false;
 
-        _isLoadingCurrentLocation = false;
+        _isLoadingCurrentLocation =
+            false;
+
         _currentLocationError = null;
       });
     } catch (_) {
@@ -665,26 +747,25 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       setState(() {
-        _isLoadingCurrentLocation = false;
+        _isLoadingCurrentLocation =
+            false;
+
         _currentLocationError =
             'Location unavailable - tap to retry';
       });
     }
   }
 
+  // ───────────────── JOURNEY PLANNING ─────────────────
+
   Future<void> _planJourney() async {
     if (_isPlanningJourney) {
       return;
     }
 
-    /*
-    * Destination must come from autocomplete.
-    *
-    * Typed text alone is not enough because Link Ride
-    * needs the controlled seed stopId.
-    */
     if (_selectedDestination == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'Please select a destination from the suggestions.',
@@ -711,7 +792,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (originLatitude == null ||
           originLongitude == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
           const SnackBar(
             content: Text(
               'The selected origin stop does not have valid coordinates.',
@@ -722,10 +804,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
     } else {
-      /*
-       * No manual origin was selected, so keep the
-       * existing device-location behaviour.
-       */
       if (_currentLatitude == null ||
           _currentLongitude == null) {
         await _loadCurrentLocation();
@@ -737,7 +815,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (_currentLatitude == null ||
           _currentLongitude == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
           SnackBar(
             content: Text(
               _currentLocationError ??
@@ -751,6 +830,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       originLatitude =
           _currentLatitude;
+
       originLongitude =
           _currentLongitude;
     }
@@ -762,11 +842,14 @@ class _HomeScreenState extends State<HomeScreen> {
         rawStopId is int
             ? rawStopId
             : int.tryParse(
-                rawStopId?.toString() ?? '',
+                rawStopId
+                        ?.toString() ??
+                    '',
               );
 
     if (destinationStopId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'The selected destination is invalid.',
@@ -791,27 +874,43 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
 
-      final Map<String, dynamic> preferences =
-          await _journeyPreferencesService.getPreferences();
+      final Map<String, dynamic>
+          preferences =
+          await _journeyPreferencesService
+              .getPreferences();
 
-      final List<Map<String, dynamic>> options =
-          await _journeyPlanService.planJourney(
-        originLatitude: originLatitude!,
-        originLongitude: originLongitude!,
-        destinationStopId: destinationStopId,
+      final List<Map<String, dynamic>>
+          options =
+          await _journeyPlanService
+              .planJourney(
+        originLatitude:
+            originLatitude!,
+        originLongitude:
+            originLongitude!,
+        destinationStopId:
+            destinationStopId,
         token: token,
         priority:
-            preferences['priority'] as String,
+            preferences['priority']
+                as String,
         gautrainSelected:
-            preferences['gautrainSelected'] as bool,
+            preferences[
+                    'gautrainSelected']
+                as bool,
         metrorailSelected:
-            preferences['metrorailSelected'] as bool,
+            preferences[
+                    'metrorailSelected']
+                as bool,
         busSelected:
-            preferences['busSelected'] as bool,
+            preferences['busSelected']
+                as bool,
         taxiSelected:
-            preferences['taxiSelected'] as bool,
+            preferences['taxiSelected']
+                as bool,
         preferFewerTransfers:
-            preferences['preferFewerTransfers'] as bool,
+            preferences[
+                    'preferFewerTransfers']
+                as bool,
       );
 
       if (!mounted) {
@@ -823,11 +922,11 @@ class _HomeScreenState extends State<HomeScreen> {
       });
 
       if (options.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
           const SnackBar(
             content: Text(
-              'No sensible journey is available within '
-              'the current Link Ride prototype network.',
+              'No sensible journey is available within the current Link Ride prototype network.',
             ),
           ),
         );
@@ -844,7 +943,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       );
-    } catch (_) {
+    } catch (error) {
+      debugPrint(
+        'Journey planning error: $error',
+      );
+
       if (!mounted) {
         return;
       }
@@ -853,7 +956,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _isPlanningJourney = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'Unable to plan your journey right now.',
@@ -863,545 +967,709 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // ───────────────── BUILD ─────────────────
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
-
+      backgroundColor:
+          LinkRideColors.background,
       body: SafeArea(
         bottom: false,
-
         child: RefreshIndicator(
           onRefresh: _refreshHomeData,
-
+          color:
+              LinkRideColors.primaryBlue,
           child: SingleChildScrollView(
             physics:
                 const AlwaysScrollableScrollPhysics(),
-
             keyboardDismissBehavior:
-                ScrollViewKeyboardDismissBehavior.onDrag,
+                ScrollViewKeyboardDismissBehavior
+                    .onDrag,
+            padding:
+                const EdgeInsets.fromLTRB(
+              20,
+              12,
+              20,
+              30,
+            ),
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                _header(),
 
-            padding: const EdgeInsets.fromLTRB(
-            22,
-            10,
-            22,
-            24,
-          ),
+                const SizedBox(height: 20),
 
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+                _heroCard(),
 
-            children: [
-              // ───────────────── HEADER ─────────────────
+                const SizedBox(height: 18),
 
-              SizedBox(
-                height: 70,
+                _journeyPlanner(),
 
-                child: Row(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.center,
+                const SizedBox(height: 28),
 
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
-
-                  children: [
-                    Image.asset(
-                      'assets/link_ride_header_logo.png',
-                      width: 165,
-                      fit: BoxFit.contain,
-                    ),
-
-                    Stack(
-                      clipBehavior: Clip.none,
-
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-
-                            borderRadius:
-                                BorderRadius.circular(
-                              16,
-                            ),
-
-                            border: Border.all(
-                              color: cardBorder,
-                            ),
-
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black
-                                    .withValues(
-                                  alpha: 0.035,
-                                ),
-
-                                blurRadius: 12,
-
-                                offset:
-                                    const Offset(
-                                  0,
-                                  4,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          child: IconButton(
-                            onPressed: _openNotifications,
-
-                            icon: const Icon(
-                              Icons
-                                  .notifications_none_rounded,
-
-                              color: primaryBlue,
-
-                              size: 25,
-                            ),
-                          ),
-                        ),
-
-                        if (_unreadNotificationCount >
-                            0)
-                          Positioned(
-                            right: -2,
-                            top: -2,
-
-                            child: Container(
-                              constraints:
-                                  const BoxConstraints(
-                                minWidth: 19,
-                                minHeight: 19,
-                              ),
-
-                              padding:
-                                  const EdgeInsets.symmetric(
-                                horizontal: 5,
-                              ),
-
-                              alignment:
-                                  Alignment.center,
-
-                              decoration:
-                                  const BoxDecoration(
-                                color: linkGreen,
-
-                                shape:
-                                    BoxShape.circle,
-                              ),
-
-                              child: Text(
-                                _unreadNotificationCount >
-                                        99
-                                    ? '99+'
-                                    : '$_unreadNotificationCount',
-
-                                style:
-                                    const TextStyle(
-                                  color:
-                                      Colors.white,
-
-                                  fontSize: 10,
-
-                                  fontWeight:
-                                      FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 13),
-
-              // ───────────────── GREETING ─────────────────
-
-              Text(
-                'Welcome, ${widget.firstName} 👋',
-
-                style: const TextStyle(
-                  fontSize: 26,
-
-                  fontWeight:
-                      FontWeight.w700,
-
-                  color: linkGreen,
-                ),
-              ),
-
-              const SizedBox(height: 5),
-
-              const Text(
-                'Where are you going?',
-
-                style: TextStyle(
-                  fontSize: 22,
-
-                  fontWeight:
-                      FontWeight.w800,
-
-                  letterSpacing: -0.5,
-
-                  color: primaryBlue,
-                ),
-              ),
-
-              const SizedBox(height: 6),
-
-              const Text(
-                'Plan your journey across connected transport services.',
-
-                style: TextStyle(
-                  fontSize: 14,
-
-                  height: 1.4,
-
-                  color: textSecondary,
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ───────────────── JOURNEY PLANNER ─────────────────
-
-              Container(
-                padding:
-                    const EdgeInsets.all(
-                  18,
+                _sectionHeader(
+                  title:
+                      'Live Transport Updates',
+                  actionLabel: 'Refresh',
+                  onAction:
+                      _isLoadingDisruptions
+                          ? null
+                          : _loadActiveDisruptions,
                 ),
 
-                decoration: BoxDecoration(
-                  color: Colors.white,
+                const SizedBox(height: 12),
 
-                  borderRadius:
-                      BorderRadius.circular(
-                    22,
+                _liveTransportUpdatesSection(),
+
+                const SizedBox(height: 28),
+
+                const Text(
+                  'Quick Access',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight:
+                        FontWeight.w800,
+                    letterSpacing: -0.2,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
                   ),
-
-                  border: Border.all(
-                    color: cardBorder,
-                  ),
-
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          const Color(
-                        0xFF003F73,
-                      ).withValues(
-                        alpha: 0.045,
-                      ),
-
-                      blurRadius: 22,
-
-                      offset:
-                          const Offset(
-                        0,
-                        8,
-                      ),
-                    ),
-                  ],
                 ),
 
-                child: Column(
+                const SizedBox(height: 12),
+
+                Row(
                   children: [
-                    // ───────── FROM / CURRENT LOCATION OR MANUAL STOP ─────────
-
-                    _originAutocompleteField(),
-
-                    Padding(
-                      padding:
-                          const EdgeInsets.only(
-                        left: 20,
-                      ),
-
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 2,
-
-                            height: 22,
-
-                            color:
-                                const Color(
-                              0xFFD9E1E8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // ───────── TO / AUTOCOMPLETE ─────────
-
-                    _destinationAutocompleteField(),
-
-                    const SizedBox(
-                      height: 17,
-                    ),
-
-                    SizedBox(
-                      width:
-                          double.infinity,
-
-                      height: 52,
-
+                    Expanded(
                       child:
-                          ElevatedButton(
-                        onPressed:
-                            _isPlanningJourney ? null : _planJourney,
+                          _quickAccessCard(
+                        icon: Icons
+                            .confirmation_number_outlined,
+                        title: 'My Ticket',
+                        subtitle:
+                            _myTicketSubtitle,
+                        accent:
+                            LinkRideColors
+                                .primaryBlue,
+                        onTap:
+                            _openCurrentTicket,
+                      ),
+                    ),
 
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryBlue,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              primaryBlue.withValues(
-                            alpha: 0.65,
-                          ),
-                          disabledForegroundColor:
-                              Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(
-                              16,
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child:
+                          _quickAccessCard(
+                        icon: Icons
+                            .history_rounded,
+                        title:
+                            'My Journeys',
+                        subtitle:
+                            'Recent trips',
+                        accent:
+                            LinkRideColors
+                                .linkGreen,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) =>
+                                      const MyJourneysScreen(),
                             ),
-                          ),
-                        ),
-
-                        child: _isPlanningJourney
-                            ? const Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child:
-                                        CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  SizedBox(width: 10),
-                                  Text(
-                                    'Finding journeys...',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight:
-                                          FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : const Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.route_rounded,
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: 9),
-                                  Text(
-                                    'Find Journey',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight:
-                                          FontWeight.w700,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 18,
-                                  ),
-                                ],
-                              ),
-                      )
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
-              ),
 
-              const SizedBox(
-                height: 24,
-              ),
-
-              // ───────────────── LIVE UPDATES ─────────────────
-
-              Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Live Transport Updates',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: textPrimary,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed:
-                        _isLoadingDisruptions
-                            ? null
-                            : _loadActiveDisruptions,
-                    style: TextButton.styleFrom(
-                      padding:
-                          const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 4,
-                      ),
-                      minimumSize: Size.zero,
-                      tapTargetSize:
-                          MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text(
-                      'Refresh',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: primaryBlue,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(
-                height: 12,
-              ),
-
-              _liveTransportUpdatesSection(),
-
-              const SizedBox(
-                height: 24,
-              ),
-
-              // ───────────────── QUICK ACCESS ─────────────────
-
-              const Text(
-                'Quick Access',
-
-                style: TextStyle(
-                  fontSize: 18,
-
-                  fontWeight:
-                      FontWeight.w800,
-
-                  color:
-                      textPrimary,
-                ),
-              ),
-
-              const SizedBox(
-                height: 12,
-              ),
-
-              Row(
-                children: [
-                  Expanded(
-                    child:
-                        _quickAccessCard(
-                      icon: Icons
-                          .confirmation_number_outlined,
-
-                      title:
-                          'My Ticket',
-
-                      subtitle:
-                          _myTicketSubtitle,
-                      onTap:
-                          _openCurrentTicket,
-                    ),
-                  ),
-
-                  const SizedBox(
-                    width: 12,
-                  ),
-
-                  Expanded(
-                    child: _quickAccessCard(
-                      icon: Icons.history_rounded,
-                      title: 'My Journeys',
-                      subtitle: 'Recent trips',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const MyJourneysScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(
-                height: 14,
-              ),
-            ],
+                const SizedBox(height: 14),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
 
-  // ───────────────── ORIGIN AUTOCOMPLETE ─────────────────
+  // ───────────────── HEADER ─────────────────
 
-  Widget _originAutocompleteField() {
-    final bool usingManualOrigin =
-        _selectedOrigin != null ||
-            _originController.text.isNotEmpty;
-
-    return Column(
+  Widget _header() {
+    return Row(
       children: [
-        Container(
-          padding:
-              const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 10,
+        Expanded(
+          child: Image.asset(
+            'assets/link_ride_header_logo.png',
+            height: 50,
+            alignment:
+                Alignment.centerLeft,
+            fit: BoxFit.contain,
           ),
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius:
-                BorderRadius.circular(16),
+        ),
+
+        const SizedBox(width: 16),
+
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Material(
+              color:
+                  LinkRideColors.surface,
+              borderRadius:
+                  BorderRadius.circular(16),
+              child: InkWell(
+                onTap: _openNotifications,
+                borderRadius:
+                    BorderRadius.circular(
+                  16,
+                ),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius:
+                        BorderRadius.circular(
+                      16,
+                    ),
+                    border: Border.all(
+                      color:
+                          LinkRideColors
+                              .border,
+                    ),
+                    boxShadow:
+                        LinkRideShadows.soft,
+                  ),
+                  child: const Icon(
+                    Icons
+                        .notifications_none_rounded,
+                    size: 24,
+                    color:
+                        LinkRideColors
+                            .primaryBlue,
+                  ),
+                ),
+              ),
+            ),
+
+            if (_unreadNotificationCount >
+                0)
+              Positioned(
+                right: -4,
+                top: -4,
+                child: Container(
+                  constraints:
+                      const BoxConstraints(
+                    minWidth: 20,
+                    minHeight: 20,
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(
+                    horizontal: 5,
+                  ),
+                  alignment:
+                      Alignment.center,
+                  decoration:
+                      const BoxDecoration(
+                    color:
+                        LinkRideColors
+                            .linkGreen,
+                    shape:
+                        BoxShape.circle,
+                  ),
+                  child: Text(
+                    _unreadNotificationCount >
+                            99
+                        ? '99+'
+                        : '$_unreadNotificationCount',
+                    style:
+                        const TextStyle(
+                      color:
+                          Colors.white,
+                      fontSize: 9.5,
+                      fontWeight:
+                          FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ───────────────── HERO ─────────────────
+
+  Widget _heroCard() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        21,
+      ),
+      decoration:
+          LinkRideDecorations.blueCard(),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -38,
+            right: -32,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white
+                    .withValues(
+                  alpha: 0.06,
+                ),
+              ),
+            ),
           ),
-          child: Row(
+
+          Positioned(
+            bottom: -48,
+            right: 42,
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color:
+                    LinkRideColors
+                        .linkGreen
+                        .withValues(
+                  alpha: 0.16,
+                ),
+              ),
+            ),
+          ),
+
+          Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
             children: [
+              Container(
+                padding:
+                    const EdgeInsets
+                        .symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration:
+                    BoxDecoration(
+                  color: Colors.white
+                      .withValues(
+                    alpha: 0.10,
+                  ),
+                  borderRadius:
+                      BorderRadius.circular(
+                    LinkRideRadius.pill,
+                  ),
+                  border: Border.all(
+                    color: Colors.white
+                        .withValues(
+                      alpha: 0.12,
+                    ),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize:
+                      MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons
+                          .directions_transit_rounded,
+                      size: 15,
+                      color:
+                          Colors.white,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'CONNECTED MOBILITY',
+                      style: TextStyle(
+                        color:
+                            Colors.white,
+                        fontSize: 10,
+                        fontWeight:
+                            FontWeight.w800,
+                        letterSpacing:
+                            0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 17),
+
+              Text(
+                'Hi, ${widget.firstName}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight:
+                      FontWeight.w600,
+                  color: Colors.white
+                      .withValues(
+                    alpha: 0.78,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              const Text(
+                'Where are you going?',
+                style: TextStyle(
+                  fontSize: 27,
+                  fontWeight:
+                      FontWeight.w800,
+                  letterSpacing: -0.7,
+                  color: Colors.white,
+                ),
+              ),
+
+              const SizedBox(height: 7),
+
+              Text(
+                'Plan one connected journey across supported public transport services.',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  height: 1.45,
+                  color: Colors.white
+                      .withValues(
+                    alpha: 0.78,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────────── JOURNEY PLANNER ─────────────────
+
+  Widget _journeyPlanner() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: LinkRideColors.surface,
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.extraLarge,
+        ),
+        border: Border.all(
+          color:
+              LinkRideColors.border,
+        ),
+        boxShadow:
+            LinkRideShadows.elevated,
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
+                  children: [
+                    Text(
+                      'Plan your journey',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight:
+                            FontWeight.w800,
+                        color:
+                            LinkRideColors
+                                .textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Choose where you are and where you want to go.',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color:
+                            LinkRideColors
+                                .textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               Container(
                 width: 38,
                 height: 38,
                 decoration:
                     BoxDecoration(
-                  color: linkGreen
-                      .withValues(
-                    alpha: 0.10,
-                  ),
-                  borderRadius:
-                      BorderRadius
-                          .circular(12),
+                  color:
+                      LinkRideColors
+                          .softBlue,
+                  shape:
+                      BoxShape.circle,
                 ),
                 child: Icon(
-                  usingManualOrigin
-                      ? Icons
-                          .place_outlined
-                      : Icons
-                          .my_location_rounded,
+                  Icons.route_rounded,
                   size: 20,
-                  color: linkGreen,
+                  color:
+                      LinkRideColors
+                          .primaryBlue,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          _originAutocompleteField(),
+
+          Padding(
+            padding:
+                const EdgeInsets.only(
+              left: 21,
+            ),
+            child: Container(
+              width: 2,
+              height: 18,
+              color:
+                  LinkRideColors.borderStrong,
+            ),
+          ),
+
+          _destinationAutocompleteField(),
+
+          if (_currentLocationError !=
+              null) ...[
+            const SizedBox(height: 10),
+
+            InkWell(
+              onTap:
+                  _loadCurrentLocation,
+              borderRadius:
+                  BorderRadius.circular(
+                12,
+              ),
+              child: Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets
+                        .symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration:
+                    BoxDecoration(
+                  color:
+                      LinkRideColors
+                          .dangerSoft,
+                  borderRadius:
+                      BorderRadius.circular(
+                    12,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons
+                          .location_off_outlined,
+                      size: 17,
+                      color:
+                          LinkRideColors
+                              .danger,
+                    ),
+                    const SizedBox(
+                      width: 8,
+                    ),
+                    Expanded(
+                      child: Text(
+                        _currentLocationError!,
+                        style:
+                            const TextStyle(
+                          fontSize: 12,
+                          fontWeight:
+                              FontWeight.w600,
+                          color:
+                              LinkRideColors
+                                  .danger,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 18),
+
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed:
+                  _isPlanningJourney
+                      ? null
+                      : _planJourney,
+              child: AnimatedSwitcher(
+                duration:
+                    const Duration(
+                  milliseconds: 180,
+                ),
+                child:
+                    _isPlanningJourney
+                        ? const Row(
+                            key:
+                                ValueKey(
+                              'planning',
+                            ),
+                            mainAxisAlignment:
+                                MainAxisAlignment
+                                    .center,
+                            children: [
+                              SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(
+                                  strokeWidth:
+                                      2,
+                                  color:
+                                      Colors.white,
+                                ),
+                              ),
+                              SizedBox(
+                                width: 10,
+                              ),
+                              Text(
+                                'Finding journeys...',
+                              ),
+                            ],
+                          )
+                        : const Row(
+                            key:
+                                ValueKey(
+                              'find-journey',
+                            ),
+                            mainAxisAlignment:
+                                MainAxisAlignment
+                                    .center,
+                            children: [
+                              Icon(
+                                Icons
+                                    .route_rounded,
+                                size: 19,
+                              ),
+                              SizedBox(
+                                width: 9,
+                              ),
+                              Text(
+                                'Find Journey',
+                              ),
+                              SizedBox(
+                                width: 8,
+                              ),
+                              Icon(
+                                Icons
+                                    .arrow_forward_rounded,
+                                size: 18,
+                              ),
+                            ],
+                          ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────────── ORIGIN FIELD ─────────────────
+
+  Widget _originAutocompleteField() {
+    final bool usingManualOrigin =
+        _selectedOrigin != null ||
+            _originController
+                .text.isNotEmpty;
+
+    final bool usingGps =
+        !usingManualOrigin &&
+            _currentLatitude != null &&
+            _currentLongitude != null;
+
+    return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding:
+              const EdgeInsets.symmetric(
+            horizontal: 13,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color:
+                LinkRideColors.surfaceSoft,
+            borderRadius:
+                BorderRadius.circular(
+              17,
+            ),
+            border: Border.all(
+              color: usingGps ||
+                      _selectedOrigin !=
+                          null
+                  ? LinkRideColors
+                      .linkGreen
+                      .withValues(
+                      alpha: 0.28,
+                    )
+                  : LinkRideColors
+                      .border,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration:
+                    BoxDecoration(
+                  color:
+                      LinkRideColors
+                          .softGreen,
+                  borderRadius:
+                      BorderRadius.circular(
+                    13,
+                  ),
+                ),
+                child: Icon(
+                  usingGps
+                      ? Icons
+                          .my_location_rounded
+                      : Icons
+                          .trip_origin_rounded,
+                  size: 20,
+                  color:
+                      LinkRideColors
+                          .linkGreen,
                 ),
               ),
 
-              const SizedBox(width: 13),
+              const SizedBox(width: 12),
 
               Expanded(
                 child: Column(
@@ -1414,10 +1682,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight:
-                            FontWeight.w700,
-                        letterSpacing: 0.8,
+                            FontWeight.w800,
+                        letterSpacing:
+                            0.9,
                         color:
-                            textSecondary,
+                            LinkRideColors
+                                .textMuted,
                       ),
                     ),
 
@@ -1427,59 +1697,66 @@ class _HomeScreenState extends State<HomeScreen> {
                       onChanged:
                           _onOriginChanged,
                       textInputAction:
-                          TextInputAction.search,
+                          TextInputAction
+                              .search,
                       style:
                           const TextStyle(
                         fontSize: 14,
                         fontWeight:
-                            FontWeight.w600,
-                        color: textPrimary,
+                            FontWeight.w700,
+                        color:
+                            LinkRideColors
+                                .textPrimary,
                       ),
                       decoration:
                           InputDecoration(
+                        filled: false,
                         hintText:
                             _isLoadingCurrentLocation
                                 ? 'Getting current location...'
-                                : _currentLatitude != null &&
-                                        _currentLongitude != null
+                                : usingGps
                                     ? 'Current location selected'
                                     : 'Current location or search a stop',
                         hintStyle:
                             const TextStyle(
-                          fontSize: 14,
+                          fontSize: 13.5,
                           fontWeight:
                               FontWeight.w600,
                           color:
-                              textSecondary,
+                              LinkRideColors
+                                  .textSecondary,
                         ),
                         border:
                             InputBorder.none,
-                        isDense: true,
+                        enabledBorder:
+                            InputBorder.none,
+                        focusedBorder:
+                            InputBorder.none,
                         contentPadding:
-                            const EdgeInsets.only(
+                            const EdgeInsets
+                                .only(
                           top: 3,
-                          bottom: 2,
+                          bottom: 1,
                         ),
+                        isDense: true,
                       ),
                     ),
                   ],
                 ),
               ),
 
+              const SizedBox(width: 5),
+
               if (_isSearchingOrigin)
-                const Padding(
-                  padding:
-                      EdgeInsets.only(
-                    left: 8,
-                  ),
-                  child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child:
-                        CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: linkGreen,
-                    ),
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child:
+                      CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color:
+                        LinkRideColors
+                            .linkGreen,
                   ),
                 )
               else
@@ -1490,13 +1767,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       _isLoadingCurrentLocation
                           ? null
                           : _useCurrentLocationOrigin,
-                  visualDensity:
-                      VisualDensity.compact,
                   icon: const Icon(
                     Icons
                         .my_location_rounded,
                     size: 20,
-                    color: linkGreen,
+                    color:
+                        LinkRideColors
+                            .linkGreen,
                   ),
                 ),
             ],
@@ -1506,371 +1783,177 @@ class _HomeScreenState extends State<HomeScreen> {
         if (_originSearchError !=
             null) ...[
           const SizedBox(height: 7),
-          Align(
-            alignment:
-                Alignment.centerLeft,
-            child: Text(
-              _originSearchError!,
-              style:
-                  const TextStyle(
-                fontSize: 12,
-                height: 1.35,
-                color:
-                    Color(0xFFD64545),
-              ),
-            ),
+          _inlineError(
+            _originSearchError!,
           ),
         ],
 
         if (_originSuggestions
             .isNotEmpty) ...[
           const SizedBox(height: 8),
-          Container(
-            width:
-                double.infinity,
-            clipBehavior:
-                Clip.antiAlias,
-            decoration:
-                BoxDecoration(
-              color: Colors.white,
-              borderRadius:
-                  BorderRadius
-                      .circular(16),
-              border:
-                  Border.all(
-                color: cardBorder,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color:
-                      Colors.black
-                          .withValues(
-                    alpha: 0.05,
-                  ),
-                  blurRadius: 14,
-                  offset:
-                      const Offset(
-                    0,
-                    6,
-                  ),
-                ),
-              ],
-            ),
-            child: Column(
-              children:
-                  List.generate(
-                _originSuggestions
-                    .length,
-                (index) {
-                  final Map<String,
-                          dynamic>
-                      stop =
-                      _originSuggestions[
-                          index];
-
-                  return Column(
-                    children: [
-                      _originSuggestionTile(
-                        stop,
-                      ),
-                      if (index <
-                          _originSuggestions
-                                  .length -
-                              1)
-                        const Divider(
-                          height: 1,
-                          thickness: 1,
-                          color:
-                              cardBorder,
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
+          _suggestionPanel(
+            suggestions:
+                _originSuggestions,
+            accent:
+                LinkRideColors.linkGreen,
+            onTap: _selectOrigin,
           ),
         ],
       ],
     );
   }
 
-  Widget _originSuggestionTile(
-    Map<String, dynamic> stop,
-  ) {
-    final String stopName =
-        stop['stopName']
-                ?.toString() ??
-            'Unknown stop';
-
-    final String stopType =
-        stop['stopType']
-                ?.toString() ??
-            'Transport stop';
-
-    return Material(
-      color: Colors.white,
-      child: InkWell(
-        onTap: () {
-          _selectOrigin(stop);
-        },
-        child: Padding(
-          padding:
-              const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 12,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration:
-                    BoxDecoration(
-                  color:
-                      const Color(
-                    0xFFEAF5EA,
-                  ),
-                  borderRadius:
-                      BorderRadius
-                          .circular(11),
-                ),
-                child:
-                    const Icon(
-                  Icons
-                      .place_outlined,
-                  size: 19,
-                  color: linkGreen,
-                ),
-              ),
-              const SizedBox(
-                width: 11,
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment
-                          .start,
-                  children: [
-                    Text(
-                      stopName,
-                      style:
-                          const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight:
-                            FontWeight
-                                .w700,
-                        color:
-                            textPrimary,
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 3,
-                    ),
-                    Text(
-                      stopType,
-                      style:
-                          const TextStyle(
-                        fontSize: 11.5,
-                        color:
-                            textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons
-                    .north_west_rounded,
-                size: 17,
-                color:
-                    Color(
-                  0xFF98A2B3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ───────────────── DESTINATION AUTOCOMPLETE ─────────────────
+  // ───────────────── DESTINATION FIELD ─────────────────
 
   Widget _destinationAutocompleteField() {
     return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
       children: [
         Container(
           padding:
-              const EdgeInsets
-                  .symmetric(
-            horizontal: 14,
-            vertical: 10,
+              const EdgeInsets.symmetric(
+            horizontal: 13,
+            vertical: 8,
           ),
-
-          decoration:
-              BoxDecoration(
-            color: background,
-
+          decoration: BoxDecoration(
+            color:
+                LinkRideColors.surfaceSoft,
             borderRadius:
-                BorderRadius
-                    .circular(
-              16,
+                BorderRadius.circular(
+              17,
+            ),
+            border: Border.all(
+              color:
+                  _selectedDestination !=
+                          null
+                      ? LinkRideColors
+                          .primaryBlue
+                          .withValues(
+                          alpha: 0.28,
+                        )
+                      : LinkRideColors
+                          .border,
             ),
           ),
-
           child: Row(
             children: [
               Container(
-                width: 38,
-
-                height: 38,
-
+                width: 40,
+                height: 40,
                 decoration:
                     BoxDecoration(
                   color:
-                      primaryBlue
-                          .withValues(
-                    alpha: 0.10,
-                  ),
-
+                      LinkRideColors
+                          .softBlue,
                   borderRadius:
-                      BorderRadius
-                          .circular(
-                    12,
+                      BorderRadius.circular(
+                    13,
                   ),
                 ),
-
-                child:
-                    const Icon(
+                child: const Icon(
                   Icons
                       .location_on_outlined,
-
-                  size: 20,
-
+                  size: 21,
                   color:
-                      primaryBlue,
+                      LinkRideColors
+                          .primaryBlue,
                 ),
               ),
 
-              const SizedBox(
-                width: 13,
-              ),
+              const SizedBox(width: 12),
 
               Expanded(
                 child: Column(
                   crossAxisAlignment:
                       CrossAxisAlignment
                           .start,
-
                   children: [
                     const Text(
                       'TO',
-
-                      style:
-                          TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
-
                         fontWeight:
-                            FontWeight
-                                .w700,
-
+                            FontWeight.w800,
                         letterSpacing:
-                            0.8,
-
+                            0.9,
                         color:
-                            textSecondary,
+                            LinkRideColors
+                                .textMuted,
                       ),
                     ),
 
                     TextField(
                       controller:
                           _destinationController,
-
                       onChanged:
                           _onDestinationChanged,
-
                       textInputAction:
                           TextInputAction
                               .search,
-
                       style:
                           const TextStyle(
                         fontSize: 14,
-
                         fontWeight:
-                            FontWeight
-                                .w600,
-
+                            FontWeight.w700,
                         color:
-                            textPrimary,
+                            LinkRideColors
+                                .textPrimary,
                       ),
-
                       decoration:
                           InputDecoration(
+                        filled: false,
                         hintText:
                             'Where do you want to go?',
-
                         hintStyle:
                             const TextStyle(
-                          fontSize:
-                              14,
-
+                          fontSize: 13.5,
                           fontWeight:
-                              FontWeight
-                                  .w600,
-
+                              FontWeight.w600,
                           color:
-                              textSecondary,
+                              LinkRideColors
+                                  .textSecondary,
                         ),
-
                         border:
                             InputBorder.none,
-
-                        isDense: true,
-
+                        enabledBorder:
+                            InputBorder.none,
+                        focusedBorder:
+                            InputBorder.none,
                         contentPadding:
                             const EdgeInsets
                                 .only(
                           top: 3,
-                          bottom: 2,
+                          bottom: 1,
                         ),
-
+                        isDense: true,
                         suffixIconConstraints:
                             const BoxConstraints(
-                          minWidth:
-                              28,
-
-                          minHeight:
-                              28,
+                          minWidth: 28,
+                          minHeight: 28,
                         ),
-
                         suffixIcon:
                             _destinationController
                                     .text
                                     .isNotEmpty
                                 ? IconButton(
+                                    tooltip:
+                                        'Clear destination',
                                     onPressed:
                                         _clearDestination,
-
                                     padding:
                                         EdgeInsets.zero,
-
                                     visualDensity:
                                         VisualDensity
                                             .compact,
-
                                     icon:
                                         const Icon(
                                       Icons
                                           .close_rounded,
-
-                                      size:
-                                          18,
-
+                                      size: 18,
                                       color:
-                                          Color(
-                                        0xFF98A2B3,
-                                      ),
+                                          LinkRideColors
+                                              .textMuted,
                                     ),
                                   )
                                 : null,
@@ -1884,22 +1967,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Padding(
                   padding:
                       EdgeInsets.only(
-                    left: 8,
+                    left: 7,
                   ),
-
-                  child:
-                      SizedBox(
-                    width: 18,
-
-                    height: 18,
-
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
                     child:
                         CircularProgressIndicator(
-                      strokeWidth:
-                          2,
-
+                      strokeWidth: 2,
                       color:
-                          primaryBlue,
+                          LinkRideColors
+                              .primaryBlue,
                     ),
                   ),
                 ),
@@ -1909,230 +1987,161 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (_destinationSearchError !=
             null) ...[
-          const SizedBox(
-            height: 7,
-          ),
-
-          Align(
-            alignment:
-                Alignment.centerLeft,
-
-            child: Text(
-              _destinationSearchError!,
-
-              style:
-                  const TextStyle(
-                fontSize: 12,
-
-                height: 1.35,
-
-                color:
-                    Color(
-                  0xFFD64545,
-                ),
-              ),
-            ),
+          const SizedBox(height: 7),
+          _inlineError(
+            _destinationSearchError!,
           ),
         ],
 
         if (_destinationSuggestions
             .isNotEmpty) ...[
-          const SizedBox(
-            height: 8,
-          ),
-
-          Container(
-            width:
-                double.infinity,
-
-            clipBehavior:
-                Clip.antiAlias,
-
-            decoration:
-                BoxDecoration(
-              color:
-                  Colors.white,
-
-              borderRadius:
-                  BorderRadius
-                      .circular(
-                16,
-              ),
-
-              border:
-                  Border.all(
-                color:
-                    cardBorder,
-              ),
-
-              boxShadow: [
-                BoxShadow(
-                  color:
-                      Colors.black
-                          .withValues(
-                    alpha:
-                        0.05,
-                  ),
-
-                  blurRadius:
-                      14,
-
-                  offset:
-                      const Offset(
-                    0,
-                    6,
-                  ),
-                ),
-              ],
-            ),
-
-            child: Column(
-              children:
-                  List.generate(
-                _destinationSuggestions
-                    .length,
-
-                (index) {
-                  final Map<String,
-                          dynamic>
-                      stop =
-                      _destinationSuggestions[
-                          index];
-
-                  return Column(
-                    children: [
-                      _destinationSuggestionTile(
-                        stop,
-                      ),
-
-                      if (index <
-                          _destinationSuggestions
-                                  .length -
-                              1)
-                        const Divider(
-                          height: 1,
-
-                          thickness:
-                              1,
-
-                          color:
-                              cardBorder,
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
+          const SizedBox(height: 8),
+          _suggestionPanel(
+            suggestions:
+                _destinationSuggestions,
+            accent:
+                LinkRideColors.primaryBlue,
+            onTap:
+                _selectDestination,
           ),
         ],
       ],
     );
   }
 
-  Widget _destinationSuggestionTile(
-    Map<String, dynamic> stop,
-  ) {
+  Widget _suggestionPanel({
+    required List<Map<String, dynamic>>
+        suggestions,
+    required Color accent,
+    required void Function(
+      Map<String, dynamic>,
+    ) onTap,
+  }) {
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: LinkRideColors.surface,
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.medium,
+        ),
+        border: Border.all(
+          color:
+              LinkRideColors.border,
+        ),
+        boxShadow:
+            LinkRideShadows.floating,
+      ),
+      child: Column(
+        children:
+            List.generate(
+          suggestions.length,
+          (index) {
+            final Map<String, dynamic> stop =
+                suggestions[index];
+
+            return Column(
+              children: [
+                _suggestionTile(
+                  stop: stop,
+                  accent: accent,
+                  onTap: () {
+                    onTap(stop);
+                  },
+                ),
+
+                if (index <
+                    suggestions.length - 1)
+                  const Divider(
+                    height: 1,
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _suggestionTile({
+    required Map<String, dynamic> stop,
+    required Color accent,
+    required VoidCallback onTap,
+  }) {
     final String stopName =
-        stop['stopName']?.toString() ??
+        stop['stopName']
+                ?.toString() ??
             'Unknown stop';
 
     final String stopType =
-        stop['stopType']?.toString() ??
+        stop['stopType']
+                ?.toString() ??
             'Transport stop';
 
     return Material(
-      color: Colors.white,
-
+      color: LinkRideColors.surface,
       child: InkWell(
-        onTap: () {
-          _selectDestination(
-            stop,
-          );
-        },
-
+        onTap: onTap,
         child: Padding(
           padding:
-              const EdgeInsets
-                  .symmetric(
+              const EdgeInsets.symmetric(
             horizontal: 14,
             vertical: 12,
           ),
-
           child: Row(
             children: [
               Container(
-                width: 36,
-
-                height: 36,
-
+                width: 38,
+                height: 38,
                 decoration:
                     BoxDecoration(
-                  color:
-                      const Color(
-                    0xFFEAF3F8,
+                  color: accent.withValues(
+                    alpha: 0.09,
                   ),
-
                   borderRadius:
-                      BorderRadius
-                          .circular(
-                    11,
+                      BorderRadius.circular(
+                    12,
                   ),
                 ),
-
-                child:
-                    const Icon(
-                  Icons
-                      .place_outlined,
-
+                child: Icon(
+                  Icons.place_outlined,
                   size: 19,
-
-                  color:
-                      primaryBlue,
+                  color: accent,
                 ),
               ),
 
-              const SizedBox(
-                width: 11,
-              ),
+              const SizedBox(width: 11),
 
               Expanded(
                 child: Column(
                   crossAxisAlignment:
                       CrossAxisAlignment
                           .start,
-
                   children: [
                     Text(
                       stopName,
-
                       style:
                           const TextStyle(
-                        fontSize:
-                            13.5,
-
+                        fontSize: 13.5,
                         fontWeight:
-                            FontWeight
-                                .w700,
-
+                            FontWeight.w700,
                         color:
-                            textPrimary,
+                            LinkRideColors
+                                .textPrimary,
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 3,
-                    ),
+                    const SizedBox(height: 3),
 
                     Text(
                       stopType,
-
                       style:
                           const TextStyle(
-                        fontSize:
-                            11.5,
-
+                        fontSize: 11.5,
                         color:
-                            textSecondary,
+                            LinkRideColors
+                                .textSecondary,
                       ),
                     ),
                   ],
@@ -2142,13 +2151,9 @@ class _HomeScreenState extends State<HomeScreen> {
               const Icon(
                 Icons
                     .north_west_rounded,
-
                 size: 17,
-
                 color:
-                    Color(
-                  0xFF98A2B3,
-                ),
+                    LinkRideColors.textMuted,
               ),
             ],
           ),
@@ -2157,21 +2162,60 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _inlineError(
+    String message,
+  ) {
+    return Padding(
+      padding:
+          const EdgeInsets.only(
+        left: 4,
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons
+                .error_outline_rounded,
+            size: 15,
+            color:
+                LinkRideColors.danger,
+          ),
+
+          const SizedBox(width: 6),
+
+          Expanded(
+            child: Text(
+              message,
+              style:
+                  const TextStyle(
+                fontSize: 11.5,
+                height: 1.35,
+                color:
+                    LinkRideColors.danger,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────────── LIVE TRANSPORT ─────────────────
+
   Widget _liveTransportUpdatesSection() {
     if (_isLoadingDisruptions) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: cardBorder,
-          ),
-        ),
+        height: 112,
+        decoration:
+            LinkRideDecorations.card(),
         child: const Center(
-          child: CircularProgressIndicator(
-            color: primaryBlue,
+          child:
+              CircularProgressIndicator(
+            strokeWidth: 2.3,
+            color:
+                LinkRideColors.primaryBlue,
           ),
         ),
       );
@@ -2180,35 +2224,56 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_disruptionError != null) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: cardBorder,
-          ),
-        ),
+        padding:
+            const EdgeInsets.all(16),
+        decoration:
+            LinkRideDecorations.card(),
         child: Row(
           children: [
-            const Icon(
-              Icons.error_outline_rounded,
-              color: primaryBlue,
+            Container(
+              width: 42,
+              height: 42,
+              decoration:
+                  BoxDecoration(
+                color:
+                    LinkRideColors
+                        .dangerSoft,
+                borderRadius:
+                    BorderRadius.circular(
+                  13,
+                ),
+              ),
+              child: const Icon(
+                Icons
+                    .error_outline_rounded,
+                color:
+                    LinkRideColors.danger,
+                size: 21,
+              ),
             ),
-            const SizedBox(width: 10),
+
+            const SizedBox(width: 12),
+
             Expanded(
               child: Text(
                 _disruptionError!,
-                style: const TextStyle(
+                style:
+                    const TextStyle(
                   fontSize: 12.5,
-                  color: textSecondary,
+                  height: 1.4,
+                  color:
+                      LinkRideColors
+                          .textSecondary,
                 ),
               ),
             ),
+
             IconButton(
-              onPressed: _loadActiveDisruptions,
+              tooltip: 'Retry',
+              onPressed:
+                  _loadActiveDisruptions,
               icon: const Icon(
                 Icons.refresh_rounded,
-                color: primaryBlue,
               ),
             ),
           ],
@@ -2218,17 +2283,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_activeDisruptions.isEmpty) {
       return _serviceUpdateCard(
-        icon: Icons.check_circle_outline_rounded,
+        icon: Icons
+            .check_circle_outline_rounded,
         service: 'Network status',
         message:
             'No active transport disruptions reported.',
         status: 'Normal',
-        statusColor: linkGreen,
+        statusColor:
+            LinkRideColors.linkGreen,
       );
     }
 
-    final List<Map<String, dynamic>> visible =
-        _activeDisruptions.take(3).toList();
+    final List<Map<String, dynamic>>
+        visible =
+        _activeDisruptions
+            .take(3)
+            .toList();
 
     return Column(
       children: [
@@ -2238,20 +2308,48 @@ class _HomeScreenState extends State<HomeScreen> {
           _disruptionCard(
             visible[index],
           ),
-          if (index < visible.length - 1)
+
+          if (index <
+              visible.length - 1)
             const SizedBox(height: 10),
         ],
-        if (_activeDisruptions.length > 3) ...[
-          const SizedBox(height: 8),
+
+        if (_activeDisruptions.length >
+            3) ...[
+          const SizedBox(height: 10),
+
           Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '+${_activeDisruptions.length - 3} more active update'
-              '${_activeDisruptions.length - 3 == 1 ? '' : 's'}',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: textSecondary,
+            alignment:
+                Alignment.centerLeft,
+            child: Container(
+              padding:
+                  const EdgeInsets
+                      .symmetric(
+                horizontal: 11,
+                vertical: 7,
+              ),
+              decoration:
+                  BoxDecoration(
+                color:
+                    LinkRideColors
+                        .softBlue,
+                borderRadius:
+                    BorderRadius.circular(
+                  LinkRideRadius.pill,
+                ),
+              ),
+              child: Text(
+                '+${_activeDisruptions.length - 3} more active update'
+                '${_activeDisruptions.length - 3 == 1 ? '' : 's'}',
+                style:
+                    const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight:
+                      FontWeight.w700,
+                  color:
+                      LinkRideColors
+                          .primaryBlue,
+                ),
               ),
             ),
           ),
@@ -2264,11 +2362,13 @@ class _HomeScreenState extends State<HomeScreen> {
     Map<String, dynamic> disruption,
   ) {
     final String title =
-        disruption['title']?.toString() ??
+        disruption['title']
+                ?.toString() ??
             'Transport disruption';
 
     final String description =
-        disruption['description']?.toString() ??
+        disruption['description']
+                ?.toString() ??
             'Service disruption reported.';
 
     final String severity =
@@ -2292,20 +2392,295 @@ class _HomeScreenState extends State<HomeScreen> {
       severity,
     );
 
+    final String routeLabel =
+        routeId > 0
+            ? '${_providerName(providerId)} • Route #$routeId'
+            : _providerName(providerId);
+
     return _serviceUpdateCard(
       icon: _disruptionIcon(
         disruption['disruptionType']
                 ?.toString() ??
             '',
       ),
-      service:
-          '${_providerName(providerId)} • Route #$routeId',
+      service: routeLabel,
       message:
           '$title — $description',
       status: severity,
-      statusColor: severityColor,
+      statusColor:
+          severityColor,
     );
   }
+
+  Widget _serviceUpdateCard({
+    required IconData icon,
+    required String service,
+    required String message,
+    required String status,
+    required Color statusColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(15),
+      decoration:
+          LinkRideDecorations.card(),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration:
+                BoxDecoration(
+              color: statusColor
+                  .withValues(
+                alpha: 0.09,
+              ),
+              borderRadius:
+                  BorderRadius.circular(
+                14,
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: statusColor,
+              size: 22,
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  service,
+                  style:
+                      const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight:
+                        FontWeight.w800,
+                    color:
+                        LinkRideColors
+                            .textPrimary,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  message,
+                  maxLines: 3,
+                  overflow:
+                      TextOverflow.ellipsis,
+                  style:
+                      const TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 10),
+
+          Container(
+            padding:
+                const EdgeInsets.symmetric(
+              horizontal: 9,
+              vertical: 6,
+            ),
+            decoration:
+                BoxDecoration(
+              color: statusColor
+                  .withValues(
+                alpha: 0.10,
+              ),
+              borderRadius:
+                  BorderRadius.circular(
+                LinkRideRadius.pill,
+              ),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight:
+                    FontWeight.w800,
+                color: statusColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────────── QUICK ACCESS ─────────────────
+
+  Widget _quickAccessCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color accent,
+    VoidCallback? onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius:
+            BorderRadius.circular(
+          LinkRideRadius.large,
+        ),
+        child: Ink(
+          height: 150,
+          padding:
+              const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color:
+                LinkRideColors.surface,
+            borderRadius:
+                BorderRadius.circular(
+              LinkRideRadius.large,
+            ),
+            border: Border.all(
+              color:
+                  LinkRideColors.border,
+            ),
+            boxShadow:
+                LinkRideShadows.soft,
+          ),
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 43,
+                    height: 43,
+                    decoration:
+                        BoxDecoration(
+                      color: accent
+                          .withValues(
+                        alpha: 0.09,
+                      ),
+                      borderRadius:
+                          BorderRadius.circular(
+                        13,
+                      ),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 21,
+                      color: accent,
+                    ),
+                  ),
+
+                  const Spacer(),
+
+                  const Icon(
+                    Icons
+                        .arrow_forward_rounded,
+                    size: 18,
+                    color:
+                        LinkRideColors
+                            .textMuted,
+                  ),
+                ],
+              ),
+
+              const Spacer(),
+
+              Text(
+                title,
+                style:
+                    const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight:
+                      FontWeight.w800,
+                  color:
+                      LinkRideColors
+                          .textPrimary,
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow:
+                    TextOverflow.ellipsis,
+                style:
+                    const TextStyle(
+                  fontSize: 11.5,
+                  color:
+                      LinkRideColors
+                          .textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ───────────────── SECTION HEADER ─────────────────
+
+  Widget _sectionHeader({
+    required String title,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style:
+                const TextStyle(
+              fontSize: 19,
+              fontWeight:
+                  FontWeight.w800,
+              letterSpacing: -0.2,
+              color:
+                  LinkRideColors
+                      .textPrimary,
+            ),
+          ),
+        ),
+
+        if (actionLabel != null)
+          TextButton.icon(
+            onPressed: onAction,
+            icon: const Icon(
+              Icons.refresh_rounded,
+              size: 17,
+            ),
+            label: Text(
+              actionLabel,
+              style:
+                  const TextStyle(
+                fontSize: 12.5,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ───────────────── HELPERS ─────────────────
 
   String _providerName(
     int providerId,
@@ -2313,14 +2688,19 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (providerId) {
       case 1:
         return 'Gautrain';
+
       case 2:
         return 'A Re Yeng';
+
       case 3:
         return 'Rea Vaya';
+
       case 4:
         return 'Metrorail Gauteng';
+
       case 5:
         return 'Minibus Taxi Network';
+
       default:
         return 'Transport Provider';
     }
@@ -2331,349 +2711,54 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     switch (severity.toUpperCase()) {
       case 'LOW':
-        return linkGreen;
+        return LinkRideColors
+            .linkGreen;
+
       case 'MEDIUM':
-        return const Color(
-          0xFFE28A19,
-        );
+        return LinkRideColors.warning;
+
       case 'HIGH':
         return const Color(
           0xFFD96A1D,
         );
+
       case 'CRITICAL':
-        return const Color(
-          0xFFD64545,
-        );
+        return LinkRideColors.danger;
+
       default:
-        return primaryBlue;
+        return LinkRideColors
+            .primaryBlue;
     }
   }
 
   IconData _disruptionIcon(
     String disruptionType,
   ) {
-    switch (disruptionType.toUpperCase()) {
+    switch (disruptionType
+        .toUpperCase()) {
       case 'DELAY':
         return Icons.schedule_rounded;
+
       case 'CANCELLATION':
         return Icons.cancel_outlined;
+
       case 'SERVICE_SUSPENSION':
-        return Icons.pause_circle_outline_rounded;
+        return Icons
+            .pause_circle_outline_rounded;
+
       case 'ROUTE_CHANGE':
         return Icons.alt_route_rounded;
+
       case 'STATION_CLOSURE':
-        return Icons.location_off_outlined;
+        return Icons
+            .location_off_outlined;
+
       default:
-        return Icons.warning_amber_rounded;
+        return Icons
+            .warning_amber_rounded;
     }
   }
 
-  // ───────────────── LIVE UPDATE CARD ─────────────────
-
-  Widget _serviceUpdateCard({
-    required IconData icon,
-    required String service,
-    required String message,
-    required String status,
-    required Color statusColor,
-  }) {
-    return Container(
-      padding:
-          const EdgeInsets.all(
-        15,
-      ),
-
-      decoration:
-          BoxDecoration(
-        color: Colors.white,
-
-        borderRadius:
-            BorderRadius.circular(
-          18,
-        ),
-
-        border: Border.all(
-          color: cardBorder,
-        ),
-
-        boxShadow: [
-          BoxShadow(
-            color:
-                Colors.black
-                    .withValues(
-              alpha: 0.018,
-            ),
-
-            blurRadius: 10,
-
-            offset:
-                const Offset(
-              0,
-              3,
-            ),
-          ),
-        ],
-      ),
-
-      child: Row(
-        children: [
-          Container(
-            width: 45,
-
-            height: 45,
-
-            decoration:
-                BoxDecoration(
-              color:
-                  const Color(
-                0xFFEAF3F8,
-              ),
-
-              borderRadius:
-                  BorderRadius
-                      .circular(
-                14,
-              ),
-            ),
-
-            child: Icon(
-              icon,
-
-              color:
-                  primaryBlue,
-
-              size: 23,
-            ),
-          ),
-
-          const SizedBox(
-            width: 13,
-          ),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment
-                      .start,
-
-              children: [
-                Text(
-                  service,
-
-                  style:
-                      const TextStyle(
-                    fontSize: 14,
-
-                    fontWeight:
-                        FontWeight
-                            .w700,
-
-                    color:
-                        textPrimary,
-                  ),
-                ),
-
-                const SizedBox(
-                  height: 3,
-                ),
-
-                Text(
-                  message,
-
-                  style:
-                      const TextStyle(
-                    fontSize: 12,
-
-                    color:
-                        textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Container(
-            padding:
-                const EdgeInsets
-                    .symmetric(
-              horizontal: 9,
-              vertical: 6,
-            ),
-
-            decoration:
-                BoxDecoration(
-              color:
-                  statusColor
-                      .withValues(
-                alpha: 0.10,
-              ),
-
-              borderRadius:
-                  BorderRadius
-                      .circular(
-                20,
-              ),
-            ),
-
-            child: Text(
-              status,
-
-              style: TextStyle(
-                fontSize: 11,
-
-                fontWeight:
-                    FontWeight
-                        .w700,
-
-                color:
-                    statusColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ───────────────── QUICK ACCESS CARD ─────────────────
-
-  Widget _quickAccessCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    VoidCallback? onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-
-      child: InkWell(
-        onTap: onTap,
-
-        borderRadius:
-            BorderRadius.circular(
-          18,
-        ),
-
-        child: Ink(
-          padding:
-              const EdgeInsets
-                  .all(
-            16,
-          ),
-
-          decoration:
-              BoxDecoration(
-            color: Colors.white,
-
-            borderRadius:
-                BorderRadius
-                    .circular(
-              18,
-            ),
-
-            border:
-                Border.all(
-              color:
-                  cardBorder,
-            ),
-
-            boxShadow: [
-              BoxShadow(
-                color:
-                    Colors.black
-                        .withValues(
-                  alpha:
-                      0.018,
-                ),
-
-                blurRadius:
-                    10,
-
-                offset:
-                    const Offset(
-                  0,
-                  3,
-                ),
-              ),
-            ],
-          ),
-
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment
-                    .start,
-
-            children: [
-              Container(
-                width: 42,
-
-                height: 42,
-
-                decoration:
-                    BoxDecoration(
-                  color:
-                      const Color(
-                    0xFFEAF3F8,
-                  ),
-
-                  borderRadius:
-                      BorderRadius
-                          .circular(
-                    13,
-                  ),
-                ),
-
-                child: Icon(
-                  icon,
-
-                  size: 22,
-
-                  color:
-                      primaryBlue,
-                ),
-              ),
-
-              const SizedBox(
-                height: 13,
-              ),
-
-              Text(
-                title,
-
-                style:
-                    const TextStyle(
-                  fontSize: 14,
-
-                  fontWeight:
-                      FontWeight
-                          .w700,
-
-                  color:
-                      textPrimary,
-                ),
-              ),
-
-              const SizedBox(
-                height: 3,
-              ),
-
-              Text(
-                subtitle,
-
-                style:
-                    const TextStyle(
-                  fontSize: 11,
-
-                  color:
-                      textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
   double? _asDouble(
     dynamic value,
   ) {
@@ -2685,12 +2770,18 @@ class _HomeScreenState extends State<HomeScreen> {
       return value.toDouble();
     }
 
+    if (value is num) {
+      return value.toDouble();
+    }
+
     return double.tryParse(
       value?.toString() ?? '',
     );
   }
 
-  int _asInt(dynamic value) {
+  int _asInt(
+    dynamic value,
+  ) {
     if (value is int) {
       return value;
     }
@@ -2704,5 +2795,4 @@ class _HomeScreenState extends State<HomeScreen> {
         ) ??
         0;
   }
-
 }

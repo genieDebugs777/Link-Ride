@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../services/journey_preferences_service.dart';
+import '../theme/link_ride_theme.dart';
 
 class JourneyPreferencesScreen extends StatefulWidget {
   const JourneyPreferencesScreen({
@@ -13,13 +15,6 @@ class JourneyPreferencesScreen extends StatefulWidget {
 
 class _JourneyPreferencesScreenState
     extends State<JourneyPreferencesScreen> {
-  static const Color primaryBlue = Color(0xFF003F73);
-  static const Color linkGreen = Color(0xFF4A9B45);
-  static const Color background = Color(0xFFF7F9FB);
-  static const Color textPrimary = Color(0xFF17212B);
-  static const Color textSecondary = Color(0xFF667085);
-  static const Color cardBorder = Color(0xFFE4E9EE);
-
   final JourneyPreferencesService _preferencesService =
       JourneyPreferencesService();
 
@@ -91,6 +86,10 @@ class _JourneyPreferencesScreenState
   }
 
   Future<void> _savePreferences() async {
+    if (isSaving) {
+      return;
+    }
+
     setState(() {
       isSaving = true;
     });
@@ -142,25 +141,19 @@ class _JourneyPreferencesScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor: LinkRideColors.background,
       appBar: AppBar(
-        backgroundColor: background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
+          tooltip: 'Back',
+          onPressed: () {
+            Navigator.pop(context);
+          },
           icon: const Icon(
             Icons.arrow_back_rounded,
-            color: primaryBlue,
           ),
         ),
         title: const Text(
           'Journey Preferences',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: primaryBlue,
-          ),
         ),
       ),
       body: SafeArea(
@@ -168,37 +161,32 @@ class _JourneyPreferencesScreenState
         child: isLoading
             ? const Center(
                 child: CircularProgressIndicator(
-                  color: primaryBlue,
+                  color: LinkRideColors.primaryBlue,
                 ),
               )
             : SingleChildScrollView(
-                padding:
-                    const EdgeInsets.fromLTRB(22, 16, 22, 30),
+                padding: const EdgeInsets.fromLTRB(
+                  20,
+                  14,
+                  20,
+                  30,
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Personalise your journeys',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Choose how Link Ride should prioritise and '
-                      'suggest transport options.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.4,
-                        color: textSecondary,
-                      ),
-                    ),
+                    _introCard(),
 
                     const SizedBox(height: 26),
 
-                    _sectionTitle('JOURNEY PRIORITY'),
+                    _sectionHeader(
+                      icon: Icons.tune_rounded,
+                      title: 'Journey Priority',
+                      description:
+                          'Choose what matters most when Link Ride ranks your journey options.',
+                    ),
+
+                    const SizedBox(height: 12),
 
                     RadioGroup<String>(
                       groupValue: selectedPriority,
@@ -211,178 +199,74 @@ class _JourneyPreferencesScreenState
                           selectedPriority = value;
                         });
                       },
-                      child: _card(
-                        child: Column(
-                          children: [
-                            _priorityOption(
-                              title: 'Balanced',
-                              subtitle:
-                                  'Balance travel time, cost and convenience',
-                              icon: Icons.balance_rounded,
-                            ),
-                            _divider(),
-                            _priorityOption(
-                              title: 'Fastest',
-                              subtitle:
-                                  'Prioritise the shortest overall travel time',
-                              icon: Icons.bolt_rounded,
-                            ),
-                            _divider(),
-                            _priorityOption(
-                              title: 'Cheapest',
-                              subtitle:
-                                  'Prioritise journeys with lower estimated costs',
-                              icon: Icons.savings_outlined,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    _sectionTitle('PREFERRED TRANSPORT'),
-
-                    _card(
                       child: Column(
                         children: [
-                          _transportOption(
-                            title: 'Gautrain',
-                            icon: Icons.train_rounded,
-                            value: gautrainSelected,
-                            onChanged: (value) {
-                              setState(() {
-                                gautrainSelected = value;
-                              });
-                            },
+                          _priorityOption(
+                            title: 'Balanced',
+                            subtitle:
+                                'Balance travel time, cost and convenience',
+                            icon: Icons.balance_rounded,
+                            accent: const Color(
+                              0xFF6C63B8,
+                            ),
                           ),
-                          _divider(),
-                          _transportOption(
-                            title: 'Metrorail',
-                            icon:
-                                Icons.directions_railway_rounded,
-                            value: metrorailSelected,
-                            onChanged: (value) {
-                              setState(() {
-                                metrorailSelected = value;
-                              });
-                            },
+
+                          const SizedBox(height: 10),
+
+                          _priorityOption(
+                            title: 'Fastest',
+                            subtitle:
+                                'Prioritise the shortest overall travel time',
+                            icon: Icons.bolt_rounded,
+                            accent:
+                                LinkRideColors.primaryBlue,
                           ),
-                          _divider(),
-                          _transportOption(
-                            title: 'Bus',
-                            icon: Icons.directions_bus_rounded,
-                            value: busSelected,
-                            onChanged: (value) {
-                              setState(() {
-                                busSelected = value;
-                              });
-                            },
-                          ),
-                          _divider(),
-                          _transportOption(
-                            title: 'Minibus Taxi',
-                            icon:
-                                Icons.airport_shuttle_rounded,
-                            value: taxiSelected,
-                            onChanged: (value) {
-                              setState(() {
-                                taxiSelected = value;
-                              });
-                            },
+
+                          const SizedBox(height: 10),
+
+                          _priorityOption(
+                            title: 'Cheapest',
+                            subtitle:
+                                'Prioritise journeys with lower estimated costs',
+                            icon: Icons.savings_outlined,
+                            accent:
+                                LinkRideColors.linkGreen,
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
 
-                    _sectionTitle('ROUTE PREFERENCE'),
-
-                    _card(
-                      child: SwitchListTile(
-                        value: preferFewerTransfers,
-                        activeThumbColor: linkGreen,
-                        title: const Text(
-                          'Prefer fewer transfers',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: textPrimary,
-                          ),
-                        ),
-                        subtitle: const Padding(
-                          padding: EdgeInsets.only(top: 4),
-                          child: Text(
-                            'Prioritise journeys with fewer interchanges '
-                            'between transport services.',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              height: 1.35,
-                              color: textSecondary,
-                            ),
-                          ),
-                        ),
-                        secondary: const Icon(
-                          Icons.compare_arrows_rounded,
-                          color: primaryBlue,
-                        ),
-                        onChanged: (value) {
-                          setState(() {
-                            preferFewerTransfers = value;
-                          });
-                        },
-                      ),
+                    _sectionHeader(
+                      icon:
+                          Icons.directions_transit_rounded,
+                      title: 'Preferred Transport',
+                      description:
+                          'Select the transport modes Link Ride may include in your journey.',
                     ),
+
+                    const SizedBox(height: 12),
+
+                    _transportGrid(),
 
                     const SizedBox(height: 28),
 
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton.icon(
-                        onPressed:
-                            isSaving ? null : _savePreferences,
-                        icon: isSaving
-                            ? const SizedBox(
-                                width: 19,
-                                height: 19,
-                                child:
-                                    CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.save_outlined,
-                                size: 20,
-                              ),
-                        label: Text(
-                          isSaving
-                              ? 'Saving...'
-                              : 'Save Preferences',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryBlue,
-                          disabledBackgroundColor:
-                              primaryBlue.withValues(
-                            alpha: 0.65,
-                          ),
-                          foregroundColor: Colors.white,
-                          disabledForegroundColor:
-                              Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
+                    _sectionHeader(
+                      icon:
+                          Icons.compare_arrows_rounded,
+                      title: 'Route Preference',
+                      description:
+                          'Fine-tune how Link Ride handles interchanges.',
                     ),
+
+                    const SizedBox(height: 12),
+
+                    _transferPreferenceCard(),
+
+                    const SizedBox(height: 28),
+
+                    _saveButton(),
                   ],
                 ),
               ),
@@ -390,160 +274,565 @@ class _JourneyPreferencesScreenState
     );
   }
 
+  Widget _introCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinkRideGradients.primarySoft,
+        borderRadius: BorderRadius.circular(
+          LinkRideRadius.extraLarge,
+        ),
+        border: Border.all(
+          color: LinkRideColors.primaryBlue
+              .withValues(alpha: 0.08),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.tune_rounded,
+              color: LinkRideColors.primaryBlue,
+              size: 23,
+            ),
+          ),
+
+          const SizedBox(width: 13),
+
+          const Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Personalise your journeys',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.25,
+                    color:
+                        LinkRideColors.textPrimary,
+                  ),
+                ),
+
+                SizedBox(height: 5),
+
+                Text(
+                  'Your preferences influence how journey options are prioritised when you plan a trip.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.45,
+                    color:
+                        LinkRideColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionHeader({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    return Row(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: LinkRideColors.softBlue,
+            borderRadius:
+                BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            size: 19,
+            color: LinkRideColors.primaryBlue,
+          ),
+        ),
+
+        const SizedBox(width: 11),
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color:
+                      LinkRideColors.textPrimary,
+                ),
+              ),
+
+              const SizedBox(height: 3),
+
+              Text(
+                description,
+                style: const TextStyle(
+                  fontSize: 11.8,
+                  height: 1.4,
+                  color:
+                      LinkRideColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _priorityOption({
     required String title,
     required String subtitle,
     required IconData icon,
+    required Color accent,
   }) {
-    return InkWell(
-      onTap: () {
-        setState(() {
-          selectedPriority = title;
-        });
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 15,
-          vertical: 14,
+    final bool selected =
+        selectedPriority == title;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            selectedPriority = title;
+          });
+        },
+        borderRadius: BorderRadius.circular(
+          LinkRideRadius.large,
         ),
-        child: Row(
+        child: Ink(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: selected
+                ? accent.withValues(
+                    alpha: 0.06,
+                  )
+                : LinkRideColors.surface,
+            borderRadius: BorderRadius.circular(
+              LinkRideRadius.large,
+            ),
+            border: Border.all(
+              color: selected
+                  ? accent.withValues(
+                      alpha: 0.34,
+                    )
+                  : LinkRideColors.border,
+              width: selected ? 1.3 : 1,
+            ),
+            boxShadow: selected
+                ? LinkRideShadows.soft
+                : const [],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: accent.withValues(
+                    alpha: 0.10,
+                  ),
+                  borderRadius:
+                      BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  icon,
+                  size: 22,
+                  color: accent,
+                ),
+              ),
+
+              const SizedBox(width: 13),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight:
+                            FontWeight.w800,
+                        color:
+                            LinkRideColors
+                                .textPrimary,
+                      ),
+                    ),
+
+                    const SizedBox(height: 3),
+
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        height: 1.35,
+                        color:
+                            LinkRideColors
+                                .textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              Radio<String>(
+                value: title,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _transportGrid() {
+    return Column(
+      children: [
+        Row(
           children: [
-            _iconBox(icon),
-            const SizedBox(width: 13),
             Expanded(
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      height: 1.35,
-                      color: textSecondary,
-                    ),
-                  ),
-                ],
+              child: _transportCard(
+                title: 'Gautrain',
+                subtitle: 'Rapid rail',
+                icon: Icons.train_rounded,
+                value: gautrainSelected,
+                accent:
+                    LinkRideColors.primaryBlue,
+                onChanged: (value) {
+                  setState(() {
+                    gautrainSelected = value;
+                  });
+                },
               ),
             ),
-            Radio<String>(
-              value: title,
+
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: _transportCard(
+                title: 'Metrorail',
+                subtitle: 'Commuter rail',
+                icon:
+                    Icons.directions_railway_rounded,
+                value: metrorailSelected,
+                accent: const Color(
+                  0xFF6C63B8,
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    metrorailSelected = value;
+                  });
+                },
+              ),
             ),
           ],
         ),
-      ),
+
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: _transportCard(
+                title: 'Bus',
+                subtitle: 'City bus',
+                icon:
+                    Icons.directions_bus_rounded,
+                value: busSelected,
+                accent:
+                    LinkRideColors.linkGreen,
+                onChanged: (value) {
+                  setState(() {
+                    busSelected = value;
+                  });
+                },
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: _transportCard(
+                title: 'Minibus Taxi',
+                subtitle: 'Taxi network',
+                icon:
+                    Icons.airport_shuttle_rounded,
+                value: taxiSelected,
+                accent: LinkRideColors.warning,
+                onChanged: (value) {
+                  setState(() {
+                    taxiSelected = value;
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
-  Widget _transportOption({
+  Widget _transportCard({
     required String title,
+    required String subtitle,
     required IconData icon,
     required bool value,
+    required Color accent,
     required ValueChanged<bool> onChanged,
   }) {
-    return CheckboxListTile(
-      value: value,
-      activeColor: linkGreen,
-      controlAffinity:
-          ListTileControlAffinity.trailing,
-      secondary: _iconBox(icon),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: textPrimary,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          onChanged(!value);
+        },
+        borderRadius: BorderRadius.circular(
+          LinkRideRadius.large,
+        ),
+        child: Ink(
+          height: 132,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: value
+                ? accent.withValues(
+                    alpha: 0.055,
+                  )
+                : LinkRideColors.surface,
+            borderRadius: BorderRadius.circular(
+              LinkRideRadius.large,
+            ),
+            border: Border.all(
+              color: value
+                  ? accent.withValues(
+                      alpha: 0.28,
+                    )
+                  : LinkRideColors.border,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 39,
+                    height: 39,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(
+                        alpha: 0.10,
+                      ),
+                      borderRadius:
+                          BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 20,
+                      color: accent,
+                    ),
+                  ),
+
+                  const Spacer(),
+
+                  Checkbox(
+                    value: value,
+                    activeColor: accent,
+                    onChanged: (newValue) {
+                      if (newValue == null) {
+                        return;
+                      }
+
+                      onChanged(newValue);
+                    },
+                  ),
+                ],
+              ),
+
+              const Spacer(),
+
+              Text(
+                title,
+                maxLines: 1,
+                overflow:
+                    TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  color:
+                      LinkRideColors.textPrimary,
+                ),
+              ),
+
+              const SizedBox(height: 3),
+
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 10.8,
+                  color:
+                      LinkRideColors
+                          .textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      onChanged: (newValue) {
-        if (newValue == null) {
-          return;
-        }
-
-        onChanged(newValue);
-      },
     );
   }
 
-  Widget _iconBox(IconData icon) {
+  Widget _transferPreferenceCard() {
     return Container(
-      width: 43,
-      height: 43,
-      decoration: BoxDecoration(
-        color: const Color(0xFFEAF3F8),
-        borderRadius: BorderRadius.circular(13),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(
+        15,
+        13,
+        11,
+        13,
       ),
-      child: Icon(
-        icon,
-        size: 21,
-        color: primaryBlue,
-      ),
-    );
-  }
+      decoration:
+          LinkRideDecorations.card(),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: LinkRideColors.softGreen,
+              borderRadius:
+                  BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.compare_arrows_rounded,
+              color: LinkRideColors.linkGreen,
+              size: 22,
+            ),
+          ),
 
-  Widget _card({
-    required Widget child,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: cardBorder,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color:
-                Colors.black.withValues(alpha: 0.018),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+          const SizedBox(width: 13),
+
+          const Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Prefer fewer transfers',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color:
+                        LinkRideColors.textPrimary,
+                  ),
+                ),
+
+                SizedBox(height: 4),
+
+                Text(
+                  'Prioritise journeys with fewer interchanges between transport services.',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.35,
+                    color:
+                        LinkRideColors
+                            .textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          Switch(
+            value: preferFewerTransfers,
+            onChanged: (value) {
+              setState(() {
+                preferFewerTransfers = value;
+              });
+            },
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Material(
-          color: Colors.transparent,
-          child: child,
-        ),
-      ),
     );
   }
 
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: 4,
-        bottom: 9,
-      ),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.1,
-          color: textSecondary,
+  Widget _saveButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        onPressed:
+            isSaving ? null : _savePreferences,
+        child: AnimatedSwitcher(
+          duration:
+              const Duration(milliseconds: 180),
+          child: isSaving
+              ? const Row(
+                  key: ValueKey(
+                    'saving-preferences',
+                  ),
+                  mainAxisAlignment:
+                      MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 19,
+                      height: 19,
+                      child:
+                          CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 9),
+                    Text(
+                      'Saving...',
+                    ),
+                  ],
+                )
+              : const Row(
+                  key: ValueKey(
+                    'save-preferences',
+                  ),
+                  mainAxisAlignment:
+                      MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.save_outlined,
+                      size: 19,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Save Preferences',
+                    ),
+                  ],
+                ),
         ),
-      ),
-    );
-  }
-
-  Widget _divider() {
-    return const Padding(
-      padding: EdgeInsets.only(left: 71),
-      child: Divider(
-        height: 1,
-        thickness: 1,
-        color: Color(0xFFEEF1F4),
       ),
     );
   }
