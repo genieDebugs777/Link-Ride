@@ -7,22 +7,27 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import za.co.linkride.link_ride_api.model.Role;
 import za.co.linkride.link_ride_api.service.JwtService;
+
 import java.io.IOException;
+import java.util.Collections;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.Collections;
-
 @Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter
+        extends OncePerRequestFilter {
 
     private final JwtService jwtService;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
-        this.jwtService = jwtService;
+    public JwtAuthenticationFilter(
+            JwtService jwtService) {
+
+        this.jwtService =
+                jwtService;
     }
 
     @Override
@@ -32,46 +37,75 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Read the Authorization header
         String authorizationHeader =
-                request.getHeader("Authorization");
+                request.getHeader(
+                        "Authorization"
+                );
 
-        // No Bearer token supplied - continue normally
         if (authorizationHeader == null ||
-                !authorizationHeader.startsWith("Bearer ")) {
+                !authorizationHeader
+                        .startsWith(
+                                "Bearer "
+                        )) {
 
-            filterChain.doFilter(request, response);
+            filterChain.doFilter(
+                    request,
+                    response
+            );
+
             return;
         }
 
-        // Remove "Bearer " and keep only the JWT
-        String token = authorizationHeader.substring(7);
+        String token =
+                authorizationHeader
+                        .substring(7);
 
-        // Validate the JWT
-        if (jwtService.isTokenValid(token)) {
+        if (jwtService.isTokenValid(
+                token
+        )) {
 
-            // Extract authenticated user information
-            String email = jwtService.extractEmail(token);
-            Long userId = jwtService.extractUserId(token);
+            String email =
+                    jwtService.extractEmail(
+                            token
+                    );
 
-            // Create a Spring Security authentication object
-            UsernamePasswordAuthenticationToken authentication =
+            Long userId =
+                    jwtService.extractUserId(
+                            token
+                    );
+
+            Role role =
+                    jwtService.extractRole(
+                            token
+                    );
+
+            UsernamePasswordAuthenticationToken
+                    authentication =
                     new UsernamePasswordAuthenticationToken(
                             email,
                             null,
                             Collections.singletonList(
-                                    new SimpleGrantedAuthority("ROLE_USER")
+                                    new SimpleGrantedAuthority(
+                                            "ROLE_"
+                                                    + role.name()
+                                    )
                             )
                     );
 
-            // Store the user ID as additional authentication details
-            authentication.setDetails(userId);
+            authentication.setDetails(
+                    userId
+            );
 
-            // Tell Spring Security this request is authenticated
-            SecurityContextHolder.getContext()
-                    .setAuthentication(authentication);
+            SecurityContextHolder
+                    .getContext()
+                    .setAuthentication(
+                            authentication
+                    );
         }
 
-        filterChain.doFilter(request, response);
+        filterChain.doFilter(
+                request,
+                response
+        );
     }
 }

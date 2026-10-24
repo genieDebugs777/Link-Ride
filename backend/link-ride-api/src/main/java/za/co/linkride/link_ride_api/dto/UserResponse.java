@@ -11,10 +11,12 @@ public class UserResponse {
     private String phoneNumber;
     private LocalDateTime createdAt;
     private String accountStatus;
+    private String role;
 
     public UserResponse() {
     }
 
+    // Kept for compatibility with any existing callers.
     public UserResponse(
             Long userId,
             String firstName,
@@ -24,6 +26,28 @@ public class UserResponse {
             LocalDateTime createdAt,
             String accountStatus) {
 
+        this(
+                userId,
+                firstName,
+                lastName,
+                email,
+                phoneNumber,
+                createdAt,
+                accountStatus,
+                "COMMUTER"
+        );
+    }
+
+    public UserResponse(
+            Long userId,
+            String firstName,
+            String lastName,
+            String email,
+            String phoneNumber,
+            LocalDateTime createdAt,
+            String accountStatus,
+            String role) {
+
         this.userId = userId;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -31,6 +55,7 @@ public class UserResponse {
         this.phoneNumber = phoneNumber;
         this.createdAt = createdAt;
         this.accountStatus = accountStatus;
+        this.role = role;
     }
 
     public Long getUserId() {
@@ -87,5 +112,13 @@ public class UserResponse {
 
     public void setAccountStatus(String accountStatus) {
         this.accountStatus = accountStatus;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

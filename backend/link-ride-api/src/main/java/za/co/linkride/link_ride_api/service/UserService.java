@@ -7,6 +7,7 @@ import za.co.linkride.link_ride_api.dto.UserResponse;
 import za.co.linkride.link_ride_api.exception.DuplicateEmailException;
 import java.time.LocalDateTime;
 import za.co.linkride.link_ride_api.model.User;
+import za.co.linkride.link_ride_api.model.Role;
 import za.co.linkride.link_ride_api.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import za.co.linkride.link_ride_api.dto.LoginRequest;
@@ -66,6 +67,7 @@ public class UserService {
         // These values are controlled by the backend
         user.setCreatedAt(LocalDateTime.now());
         user.setAccountStatus("PENDING_VERIFICATION");
+        user.setRole(Role.COMMUTER);
 
         // Save to PostgreSQL before creating the verification token
         User savedUser = userRepository.save(user);
@@ -81,7 +83,8 @@ public class UserService {
                 savedUser.getEmail(),
                 savedUser.getPhoneNumber(),
                 savedUser.getCreatedAt(),
-                savedUser.getAccountStatus()
+                savedUser.getAccountStatus(),
+                savedUser.getRole().name()
         );
     }
 
@@ -121,7 +124,8 @@ public class UserService {
                 user.getEmail(),
                 user.getPhoneNumber(),
                 user.getCreatedAt(),
-                user.getAccountStatus()
+                user.getAccountStatus(),
+                user.getRole().name()
         );
 
         // Password authentication is only the first factor.
@@ -157,13 +161,15 @@ public class UserService {
                         user.getEmail(),
                         user.getPhoneNumber(),
                         user.getCreatedAt(),
-                        user.getAccountStatus()
+                        user.getAccountStatus(),
+                        user.getRole().name()
                 );
 
         String token =
                 jwtService.generateToken(
                         user.getUserId(),
-                        user.getEmail()
+                        user.getEmail(),
+                        user.getRole()
                 );
 
         return new LoginResponse(
@@ -214,7 +220,8 @@ public class UserService {
                 savedUser.getEmail(),
                 savedUser.getPhoneNumber(),
                 savedUser.getCreatedAt(),
-                savedUser.getAccountStatus()
+                savedUser.getAccountStatus(),
+                savedUser.getRole().name()
         );
     }
 
@@ -289,7 +296,8 @@ public class UserService {
                 user.getEmail(),
                 user.getPhoneNumber(),
                 user.getCreatedAt(),
-                user.getAccountStatus()
+                user.getAccountStatus(),
+                user.getRole().name()
         );
     }
 }

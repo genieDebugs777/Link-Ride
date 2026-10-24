@@ -1,26 +1,29 @@
 package za.co.linkride.link_ride_api.controller;
+
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 import za.co.linkride.link_ride_api.dto.ChangePasswordRequest;
 import za.co.linkride.link_ride_api.dto.ForgotPasswordRequest;
 import za.co.linkride.link_ride_api.dto.ForgotPasswordResponse;
-import za.co.linkride.link_ride_api.dto.ResetPasswordRequest;
-import org.springframework.http.ResponseEntity;
-import jakarta.validation.Valid;
-import za.co.linkride.link_ride_api.dto.RegistrationRequest;
-import za.co.linkride.link_ride_api.dto.UserResponse;
-import org.springframework.web.bind.annotation.*;
-import za.co.linkride.link_ride_api.service.UserService;
-import za.co.linkride.link_ride_api.service.PasswordResetService;
 import za.co.linkride.link_ride_api.dto.LoginRequest;
-import java.util.List;
 import za.co.linkride.link_ride_api.dto.LoginResponse;
+import za.co.linkride.link_ride_api.dto.RegistrationRequest;
+import za.co.linkride.link_ride_api.dto.ResendMfaRequest;
+import za.co.linkride.link_ride_api.dto.ResendVerificationRequest;
+import za.co.linkride.link_ride_api.dto.ResetPasswordRequest;
+import za.co.linkride.link_ride_api.dto.UserResponse;
 import za.co.linkride.link_ride_api.dto.UserUpdateRequest;
 import za.co.linkride.link_ride_api.dto.VerifyEmailRequest;
-import za.co.linkride.link_ride_api.dto.ResendVerificationRequest;
-import za.co.linkride.link_ride_api.service.EmailVerificationService;
 import za.co.linkride.link_ride_api.dto.VerifyMfaRequest;
-import za.co.linkride.link_ride_api.dto.ResendMfaRequest;
+import za.co.linkride.link_ride_api.service.EmailVerificationService;
 import za.co.linkride.link_ride_api.service.MfaService;
+import za.co.linkride.link_ride_api.service.PasswordResetService;
+import za.co.linkride.link_ride_api.service.UserService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -51,9 +54,14 @@ public class UserController {
     public ResponseEntity<UserResponse> registerUser(
             @Valid @RequestBody RegistrationRequest request) {
 
-        UserResponse registeredUser = userService.registerUser(request);
+        UserResponse registeredUser =
+                userService.registerUser(
+                        request
+                );
 
-        return ResponseEntity.ok(registeredUser);
+        return ResponseEntity.ok(
+                registeredUser
+        );
     }
 
     // VERIFY EMAIL
@@ -66,7 +74,9 @@ public class UserController {
                 request.getVerificationCode()
         );
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 
     // RESEND VERIFICATION CODE
@@ -78,7 +88,9 @@ public class UserController {
                 request.getEmail()
         );
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 
     // LOGIN
@@ -86,9 +98,14 @@ public class UserController {
     public ResponseEntity<LoginResponse> loginUser(
             @Valid @RequestBody LoginRequest request) {
 
-        LoginResponse loginResponse = userService.loginUser(request);
+        LoginResponse loginResponse =
+                userService.loginUser(
+                        request
+                );
 
-        return ResponseEntity.ok(loginResponse);
+        return ResponseEntity.ok(
+                loginResponse
+        );
     }
 
     // VERIFY MFA AND ISSUE JWT
@@ -121,7 +138,7 @@ public class UserController {
                 .build();
     }
 
-    // FORGOT PASSWORD - prototype reset code flow
+    // FORGOT PASSWORD
     @PostMapping("/forgot-password")
     public ResponseEntity<ForgotPasswordResponse>
     forgotPassword(
@@ -138,7 +155,7 @@ public class UserController {
         );
     }
 
-    // RESET PASSWORD - prototype code validation
+    // RESET PASSWORD
     @PostMapping("/reset-password")
     public ResponseEntity<Void>
     resetPassword(
@@ -156,66 +173,200 @@ public class UserController {
                 .build();
     }
 
-    // READ - all users
+    // ADMIN - READ ALL USERS
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<List<UserResponse>>
+    getAllUsers() {
+
+        return ResponseEntity.ok(
+                userService.getAllUsers()
+        );
     }
 
-    // READ - user by ID
+    // SELF OR ADMIN - READ USER
     @GetMapping("/{userId}")
     public ResponseEntity<UserResponse> getUserById(
-            @PathVariable Long userId) {
+            @PathVariable Long userId,
+            Authentication authentication) {
 
-        return userService.getUserById(userId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        if (!isSelfOrAdmin(
+                authentication,
+                userId
+        )) {
+
+            return ResponseEntity
+                    .status(
+                            HttpStatus.FORBIDDEN
+                    )
+                    .build();
+        }
+
+        return userService
+                .getUserById(
+                        userId
+                )
+                .map(
+                        ResponseEntity::ok
+                )
+                .orElse(
+                        ResponseEntity
+                                .notFound()
+                                .build()
+                );
     }
 
-    // UPDATE
+    // SELF OR ADMIN - UPDATE USER
     @PutMapping("/{userId}")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable Long userId,
-            @Valid @RequestBody UserUpdateRequest request) {
+            @Valid @RequestBody UserUpdateRequest request,
+            Authentication authentication) {
+
+        if (!isSelfOrAdmin(
+                authentication,
+                userId
+        )) {
+
+            return ResponseEntity
+                    .status(
+                            HttpStatus.FORBIDDEN
+                    )
+                    .build();
+        }
 
         try {
             UserResponse updatedUser =
-                    userService.updateUser(userId, request);
+                    userService.updateUser(
+                            userId,
+                            request
+                    );
 
-            return ResponseEntity.ok(updatedUser);
+            return ResponseEntity.ok(
+                    updatedUser
+            );
 
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+        } catch (RuntimeException error) {
+
+            return ResponseEntity
+                    .notFound()
+                    .build();
         }
     }
 
-    // CHANGE PASSWORD
+    // SELF - CHANGE PASSWORD
     @PutMapping("/password")
     public ResponseEntity<Void> changePassword(
             Authentication authentication,
             @Valid @RequestBody ChangePasswordRequest request) {
 
         Long authenticatedUserId =
-                (Long) authentication.getDetails();
+                authenticatedUserId(
+                        authentication
+                );
+
+        if (authenticatedUserId == null) {
+
+            return ResponseEntity
+                    .status(
+                            HttpStatus.UNAUTHORIZED
+                    )
+                    .build();
+        }
 
         userService.changePassword(
                 authenticatedUserId,
                 request
         );
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 
-    // DELETE
+    // ADMIN - DELETE USER
     @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable Long userId) {
 
         try {
-            userService.deleteUser(userId);
-            return ResponseEntity.noContent().build();
+            userService.deleteUser(
+                    userId
+            );
 
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity
+                    .noContent()
+                    .build();
+
+        } catch (RuntimeException error) {
+
+            return ResponseEntity
+                    .notFound()
+                    .build();
         }
+    }
+
+    private boolean isSelfOrAdmin(
+            Authentication authentication,
+            Long requestedUserId) {
+
+        if (authentication == null ||
+                !authentication.isAuthenticated()) {
+
+            return false;
+        }
+
+        if (hasRole(
+                authentication,
+                "ROLE_ADMIN"
+        )) {
+
+            return true;
+        }
+
+        Long authenticatedUserId =
+                authenticatedUserId(
+                        authentication
+                );
+
+        return authenticatedUserId != null &&
+                authenticatedUserId.equals(
+                        requestedUserId
+                );
+    }
+
+    private Long authenticatedUserId(
+            Authentication authentication) {
+
+        if (authentication == null) {
+            return null;
+        }
+
+        Object details =
+                authentication.getDetails();
+
+        if (details instanceof Long userId) {
+            return userId;
+        }
+
+        return null;
+    }
+
+    private boolean hasRole(
+            Authentication authentication,
+            String role) {
+
+        if (authentication == null) {
+            return false;
+        }
+
+        return authentication
+                .getAuthorities()
+                .stream()
+                .anyMatch(
+                        authority ->
+                                role.equals(
+                                        authority.getAuthority()
+                                )
+                );
     }
 }

@@ -33,18 +33,44 @@ public class User {
     @Column(name = "account_status", nullable = false)
     private String accountStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role")
+    private Role role = Role.COMMUTER;
+
     // Default constructor required by JPA
     public User() {
     }
 
-    // Constructor
-    public User(String firstName,
-                String lastName,
-                String email,
-                String phoneNumber,
-                String passwordHash,
-                LocalDateTime createdAt,
-                String accountStatus) {
+    public User(
+            String firstName,
+            String lastName,
+            String email,
+            String phoneNumber,
+            String passwordHash,
+            LocalDateTime createdAt,
+            String accountStatus) {
+
+        this(
+                firstName,
+                lastName,
+                email,
+                phoneNumber,
+                passwordHash,
+                createdAt,
+                accountStatus,
+                Role.COMMUTER
+        );
+    }
+
+    public User(
+            String firstName,
+            String lastName,
+            String email,
+            String phoneNumber,
+            String passwordHash,
+            LocalDateTime createdAt,
+            String accountStatus,
+            Role role) {
 
         this.firstName = firstName;
         this.lastName = lastName;
@@ -53,6 +79,9 @@ public class User {
         this.passwordHash = passwordHash;
         this.createdAt = createdAt;
         this.accountStatus = accountStatus;
+        this.role = role == null
+                ? Role.COMMUTER
+                : role;
     }
 
     public Long getUserId() {
@@ -117,5 +146,24 @@ public class User {
 
     public void setAccountStatus(String accountStatus) {
         this.accountStatus = accountStatus;
+    }
+
+    public Role getRole() {
+        return role == null
+                ? Role.COMMUTER
+                : role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role == null
+                ? Role.COMMUTER
+                : role;
+    }
+
+    @PrePersist
+    public void applyDefaults() {
+        if (role == null) {
+            role = Role.COMMUTER;
+        }
     }
 }

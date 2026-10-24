@@ -22,13 +22,15 @@ public class DisruptionController {
                 disruptionService;
     }
 
+    // AUTHENTICATED USERS - ACTIVE DISRUPTIONS
     @GetMapping("/active")
     public ResponseEntity<List<Disruption>>
     getActiveDisruptions(
             Authentication authentication) {
 
         if (!isAuthenticated(
-                authentication)) {
+                authentication
+        )) {
 
             return ResponseEntity
                     .status(401)
@@ -41,6 +43,7 @@ public class DisruptionController {
         );
     }
 
+    // AUTHENTICATED USERS - ROUTE DISRUPTIONS
     @GetMapping("/route/{routeId}")
     public ResponseEntity<?>
     getDisruptionsForRoute(
@@ -53,7 +56,8 @@ public class DisruptionController {
             Authentication authentication) {
 
         if (!isAuthenticated(
-                authentication)) {
+                authentication
+        )) {
 
             return ResponseEntity
                     .status(401)
@@ -62,6 +66,7 @@ public class DisruptionController {
 
         try {
             if (activeOnly) {
+
                 return ResponseEntity.ok(
                         disruptionService
                                 .getActiveDisruptionsForRoute(
@@ -78,6 +83,7 @@ public class DisruptionController {
             );
 
         } catch (IllegalArgumentException error) {
+
             return ResponseEntity
                     .badRequest()
                     .body(
@@ -86,6 +92,7 @@ public class DisruptionController {
         }
     }
 
+    // AUTHENTICATED USERS - OWN JOURNEY DISRUPTIONS
     @GetMapping("/journey/{journeyId}")
     public ResponseEntity<?>
     getDisruptionsForJourney(
@@ -93,7 +100,8 @@ public class DisruptionController {
             Authentication authentication) {
 
         if (!isAuthenticated(
-                authentication)) {
+                authentication
+        )) {
 
             return ResponseEntity
                     .status(401)
@@ -104,6 +112,7 @@ public class DisruptionController {
                 authentication.getDetails();
 
         if (!(details instanceof Long userId)) {
+
             return ResponseEntity
                     .status(401)
                     .build();
@@ -119,6 +128,7 @@ public class DisruptionController {
             );
 
         } catch (IllegalArgumentException error) {
+
             return ResponseEntity
                     .badRequest()
                     .body(
@@ -127,6 +137,7 @@ public class DisruptionController {
         }
     }
 
+    // OPERATOR / ADMIN - CREATE DISRUPTION
     @PostMapping
     public ResponseEntity<?>
     createDisruption(
@@ -134,13 +145,16 @@ public class DisruptionController {
             CreateDisruptionRequest request,
             Authentication authentication) {
 
-        if (!isAuthenticated(
-                authentication)) {
+        if (!hasAnyRole(
+                authentication,
+                "ROLE_OPERATOR",
+                "ROLE_ADMIN"
+        )) {
 
             return ResponseEntity
-                    .status(401)
+                    .status(403)
                     .body(
-                            "Authentication is required."
+                            "Operator or administrator access is required."
                     );
         }
 
@@ -156,6 +170,7 @@ public class DisruptionController {
             );
 
         } catch (IllegalArgumentException error) {
+
             return ResponseEntity
                     .badRequest()
                     .body(
@@ -164,19 +179,23 @@ public class DisruptionController {
         }
     }
 
+    // OPERATOR / ADMIN - RESOLVE DISRUPTION
     @PutMapping("/{id}/resolve")
     public ResponseEntity<?>
     resolveDisruption(
             @PathVariable Long id,
             Authentication authentication) {
 
-        if (!isAuthenticated(
-                authentication)) {
+        if (!hasAnyRole(
+                authentication,
+                "ROLE_OPERATOR",
+                "ROLE_ADMIN"
+        )) {
 
             return ResponseEntity
-                    .status(401)
+                    .status(403)
                     .body(
-                            "Authentication is required."
+                            "Operator or administrator access is required."
                     );
         }
 
@@ -189,6 +208,7 @@ public class DisruptionController {
             );
 
         } catch (IllegalArgumentException error) {
+
             return ResponseEntity
                     .badRequest()
                     .body(
@@ -200,8 +220,8 @@ public class DisruptionController {
     private boolean isAuthenticated(
             Authentication authentication) {
 
-        if (authentication == null
-                || !authentication.isAuthenticated()) {
+        if (authentication == null ||
+                !authentication.isAuthenticated()) {
 
             return false;
         }
@@ -210,5 +230,37 @@ public class DisruptionController {
                 authentication.getDetails();
 
         return details instanceof Long;
+    }
+
+    private boolean hasAnyRole(
+            Authentication authentication,
+            String... roles) {
+
+        if (!isAuthenticated(
+                authentication
+        )) {
+
+            return false;
+        }
+
+        for (String role : roles) {
+
+            boolean hasRole =
+                    authentication
+                            .getAuthorities()
+                            .stream()
+                            .anyMatch(
+                                    authority ->
+                                            role.equals(
+                                                    authority.getAuthority()
+                                            )
+                            );
+
+            if (hasRole) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
