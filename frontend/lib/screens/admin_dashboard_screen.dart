@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/link_ride_theme.dart';
 import 'operator_management_screen.dart';
 import 'admin_disruption_screen.dart';
+import 'network_admin_screen.dart';
 import 'user_management_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -74,7 +75,14 @@ class AdminDashboardScreen extends StatelessWidget {
               icon: Icons.directions_transit_rounded,
               title: 'Providers & routes',
               description: 'Review the transport providers and route data used by Link Ride.',
-              badge: 'Planned',
+              badge: 'Open',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const NetworkAdminScreen(),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
             _managementCard(

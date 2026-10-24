@@ -108,6 +108,13 @@ public class SecurityConfig {
                                 "/api/users/*"
                         ).authenticated()
 
+
+                        // ADMIN - controlled provider and route dataset.
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/admin/network/**"
+                        ).hasRole("ADMIN")
+
                         // All authenticated roles can read disruption information.
                         .requestMatchers(
                                 HttpMethod.GET,
