@@ -18,6 +18,9 @@ import za.co.linkride.link_ride_api.dto.UserUpdateRequest;
 import za.co.linkride.link_ride_api.dto.VerifyEmailRequest;
 import za.co.linkride.link_ride_api.dto.ResendVerificationRequest;
 import za.co.linkride.link_ride_api.service.EmailVerificationService;
+import za.co.linkride.link_ride_api.dto.VerifyMfaRequest;
+import za.co.linkride.link_ride_api.dto.ResendMfaRequest;
+import za.co.linkride.link_ride_api.service.MfaService;
 
 @RestController
 @RequestMapping("/api/users")
@@ -26,17 +29,21 @@ public class UserController {
     private final UserService userService;
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
+    private final MfaService mfaService;
 
     public UserController(
             UserService userService,
             PasswordResetService passwordResetService,
-            EmailVerificationService emailVerificationService) {
+            EmailVerificationService emailVerificationService,
+            MfaService mfaService) {
 
         this.userService = userService;
         this.passwordResetService =
                 passwordResetService;
         this.emailVerificationService =
                 emailVerificationService;
+        this.mfaService =
+                mfaService;
     }
 
     // REGISTER
@@ -82,6 +89,36 @@ public class UserController {
         LoginResponse loginResponse = userService.loginUser(request);
 
         return ResponseEntity.ok(loginResponse);
+    }
+
+    // VERIFY MFA AND ISSUE JWT
+    @PostMapping("/verify-mfa")
+    public ResponseEntity<LoginResponse> verifyMfa(
+            @Valid @RequestBody VerifyMfaRequest request) {
+
+        LoginResponse loginResponse =
+                userService.verifyMfa(
+                        request.getEmail(),
+                        request.getCode()
+                );
+
+        return ResponseEntity.ok(
+                loginResponse
+        );
+    }
+
+    // RESEND MFA CODE
+    @PostMapping("/resend-mfa")
+    public ResponseEntity<Void> resendMfa(
+            @Valid @RequestBody ResendMfaRequest request) {
+
+        mfaService.resendChallenge(
+                request.getEmail()
+        );
+
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 
     // FORGOT PASSWORD - prototype reset code flow

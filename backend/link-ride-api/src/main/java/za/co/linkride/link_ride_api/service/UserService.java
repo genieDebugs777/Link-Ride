@@ -23,17 +23,20 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailVerificationService emailVerificationService;
+    private final MfaService mfaService;
 
     public UserService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            EmailVerificationService emailVerificationService) {
+            EmailVerificationService emailVerificationService,
+            MfaService mfaService) {
 
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.emailVerificationService = emailVerificationService;
+        this.mfaService = mfaService;
     }
 
     // REGISTER USER
@@ -121,16 +124,53 @@ public class UserService {
                 user.getAccountStatus()
         );
 
-        // Generate a signed JWT for the authenticated user
-        String token = jwtService.generateToken(
-                user.getUserId(),
-                user.getEmail()
+        // Password authentication is only the first factor.
+        // A JWT is issued only after the emailed MFA code is verified.
+        mfaService.sendChallenge(
+                user
         );
+
+        return new LoginResponse(
+                null,
+                null,
+                userResponse,
+                true
+        );
+    }
+
+    // COMPLETE MFA LOGIN
+    public LoginResponse verifyMfa(
+            String email,
+            String code) {
+
+        User user =
+                mfaService.verifyChallenge(
+                        email,
+                        code
+                );
+
+        UserResponse userResponse =
+                new UserResponse(
+                        user.getUserId(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getEmail(),
+                        user.getPhoneNumber(),
+                        user.getCreatedAt(),
+                        user.getAccountStatus()
+                );
+
+        String token =
+                jwtService.generateToken(
+                        user.getUserId(),
+                        user.getEmail()
+                );
 
         return new LoginResponse(
                 token,
                 "Bearer",
-                userResponse
+                userResponse,
+                false
         );
     }
 

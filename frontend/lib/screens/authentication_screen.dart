@@ -5,14 +5,14 @@ import '../services/auth_storage.dart';
 import '../theme/link_ride_theme.dart';
 import 'forgot_password_screen.dart';
 import 'main_navigation_screen.dart';
+import 'mfa_verification_screen.dart';
 import 'registration_screen.dart';
 
 class AuthenticationScreen extends StatefulWidget {
   const AuthenticationScreen({super.key});
 
   @override
-  State<AuthenticationScreen> createState() =>
-      _AuthenticationScreenState();
+  State<AuthenticationScreen> createState() => _AuthenticationScreenState();
 }
 
 class _AuthenticationScreenState extends State<AuthenticationScreen> {
@@ -21,11 +21,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   final AuthService _authService = AuthService();
   final AuthStorage _authStorage = AuthStorage();
 
-  final TextEditingController emailController =
-      TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
-  final TextEditingController passwordController =
-      TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   final FocusNode emailFocusNode = FocusNode();
   final FocusNode passwordFocusNode = FocusNode();
@@ -84,20 +82,47 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     });
 
     try {
-      final Map<String, dynamic> response =
-          await _authService.login(
+      final Map<String, dynamic> response = await _authService.login(
         email: emailController.text.trim(),
         password: passwordController.text,
       );
 
-      final String token =
-          response['token'] as String;
+      Map<String, dynamic> authenticatedResponse = response;
+
+      if (response['mfaRequired'] == true) {
+        if (!mounted) {
+          return;
+        }
+
+        final Map<String, dynamic>? mfaResponse =
+            await Navigator.push<Map<String, dynamic>>(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    MfaVerificationScreen(email: emailController.text.trim()),
+              ),
+            );
+
+        if (!mounted) {
+          return;
+        }
+
+        if (mfaResponse == null) {
+          setState(() {
+            _isSigningIn = false;
+          });
+          return;
+        }
+
+        authenticatedResponse = mfaResponse;
+      }
+
+      final String token = authenticatedResponse['token'] as String;
 
       final String firstName =
-          response['user']['firstName'] as String;
+          authenticatedResponse['user']['firstName'] as String;
 
-      final int userId =
-          response['user']['userId'] as int;
+      final int userId = authenticatedResponse['user']['userId'] as int;
 
       await _authStorage.saveToken(token);
       await _authStorage.saveFirstName(firstName);
@@ -107,20 +132,13 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Welcome back, $firstName!',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Welcome back, $firstName!')));
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => MainNavigationScreen(
-            firstName: firstName,
-          ),
+          builder: (context) => MainNavigationScreen(firstName: firstName),
         ),
       );
     } catch (error) {
@@ -134,14 +152,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            error
-                .toString()
-                .replaceFirst(
-                  'Exception: ',
-                  '',
-                ),
-          ),
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
         ),
       );
     }
@@ -150,26 +161,17 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   void forgotPassword() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) =>
-            const ForgotPasswordScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
     );
   }
 
   Future<void> createAccount() async {
-    final String? registeredEmail =
-        await Navigator.push<String>(
+    final String? registeredEmail = await Navigator.push<String>(
       context,
-      MaterialPageRoute(
-        builder: (context) =>
-            const RegistrationScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const RegistrationScreen()),
     );
 
-    if (!mounted ||
-        registeredEmail == null ||
-        registeredEmail.isEmpty) {
+    if (!mounted || registeredEmail == null || registeredEmail.isEmpty) {
       return;
     }
 
@@ -211,22 +213,14 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
               child: SingleChildScrollView(
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(
-                  22,
-                  24,
-                  22,
-                  32,
-                ),
+                padding: const EdgeInsets.fromLTRB(22, 24, 22, 32),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: 430,
-                    ),
+                    constraints: const BoxConstraints(maxWidth: 430),
                     child: Form(
                       key: _formKey,
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.stretch,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _brandHeader(),
 
@@ -262,10 +256,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             borderRadius: BorderRadius.circular(26),
             boxShadow: LinkRideShadows.elevated,
           ),
-          child: Image.asset(
-            'assets/link_ride_logo.png',
-            fit: BoxFit.contain,
-          ),
+          child: Image.asset('assets/link_ride_logo.png', fit: BoxFit.contain),
         ),
 
         const SizedBox(height: 20),
@@ -301,17 +292,12 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: LinkRideColors.surface,
-        borderRadius: BorderRadius.circular(
-          LinkRideRadius.extraLarge,
-        ),
-        border: Border.all(
-          color: LinkRideColors.border,
-        ),
+        borderRadius: BorderRadius.circular(LinkRideRadius.extraLarge),
+        border: Border.all(color: LinkRideColors.border),
         boxShadow: LinkRideShadows.soft,
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
             'Sign in',
@@ -326,10 +312,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
           const Text(
             'Enter your account details below.',
-            style: TextStyle(
-              fontSize: 13,
-              color: LinkRideColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 13, color: LinkRideColors.textSecondary),
           ),
 
           const SizedBox(height: 22),
@@ -342,21 +325,15 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             controller: emailController,
             focusNode: emailFocusNode,
             validator: validateEmail,
-            keyboardType:
-                TextInputType.emailAddress,
-            textInputAction:
-                TextInputAction.next,
-            autofillHints: const [
-              AutofillHints.email,
-            ],
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.email],
             onFieldSubmitted: (_) {
               passwordFocusNode.requestFocus();
             },
             decoration: const InputDecoration(
               hintText: 'name@example.com',
-              prefixIcon: Icon(
-                Icons.mail_outline_rounded,
-              ),
+              prefixIcon: Icon(Icons.mail_outline_rounded),
             ),
           ),
 
@@ -371,34 +348,25 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             focusNode: passwordFocusNode,
             validator: validatePassword,
             obscureText: obscurePassword,
-            textInputAction:
-                TextInputAction.done,
-            autofillHints: const [
-              AutofillHints.password,
-            ],
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.password],
             onFieldSubmitted: (_) {
               login();
             },
             decoration: InputDecoration(
               hintText: 'Enter your password',
-              prefixIcon: const Icon(
-                Icons.lock_outline_rounded,
-              ),
+              prefixIcon: const Icon(Icons.lock_outline_rounded),
               suffixIcon: IconButton(
-                tooltip: obscurePassword
-                    ? 'Show password'
-                    : 'Hide password',
+                tooltip: obscurePassword ? 'Show password' : 'Hide password',
                 onPressed: () {
                   setState(() {
-                    obscurePassword =
-                        !obscurePassword;
+                    obscurePassword = !obscurePassword;
                   });
                 },
                 icon: Icon(
                   obscurePassword
                       ? Icons.visibility_outlined
-                      : Icons
-                          .visibility_off_outlined,
+                      : Icons.visibility_off_outlined,
                 ),
               ),
             ),
@@ -411,15 +379,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             child: TextButton(
               onPressed: forgotPassword,
               style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               ),
-              child: const Text(
-                'Forgot password?',
-              ),
+              child: const Text('Forgot password?'),
             ),
           ),
 
@@ -428,38 +390,26 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed:
-                  _isSigningIn ? null : login,
+              onPressed: _isSigningIn ? null : login,
               child: AnimatedSwitcher(
-                duration:
-                    const Duration(milliseconds: 180),
+                duration: const Duration(milliseconds: 180),
                 child: _isSigningIn
                     ? const SizedBox(
-                        key: ValueKey(
-                          'login-progress',
-                        ),
+                        key: ValueKey('login-progress'),
                         width: 20,
                         height: 20,
-                        child:
-                            CircularProgressIndicator(
+                        child: CircularProgressIndicator(
                           strokeWidth: 2.2,
                           color: Colors.white,
                         ),
                       )
                     : const Row(
-                        key: ValueKey(
-                          'login-label',
-                        ),
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
+                        key: ValueKey('login-label'),
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text('Sign In'),
                           SizedBox(width: 8),
-                          Icon(
-                            Icons
-                                .arrow_forward_rounded,
-                            size: 19,
-                          ),
+                          Icon(Icons.arrow_forward_rounded, size: 19),
                         ],
                       ),
               ),
@@ -469,24 +419,18 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
           const SizedBox(height: 16),
 
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 13,
-              vertical: 11,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
             decoration: BoxDecoration(
               color: LinkRideColors.softBlue,
-              borderRadius:
-                  BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: const Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.shield_outlined,
                   size: 16,
-                  color:
-                      LinkRideColors.primaryBlue,
+                  color: LinkRideColors.primaryBlue,
                 ),
                 SizedBox(width: 7),
                 Text(
@@ -494,8 +438,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color:
-                        LinkRideColors.textSecondary,
+                    color: LinkRideColors.textSecondary,
                   ),
                 ),
               ],
@@ -508,32 +451,21 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
   Widget _accountPrompt() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 16,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
-        color: LinkRideColors.surface
-            .withValues(alpha: 0.84),
-        borderRadius:
-            BorderRadius.circular(
-          LinkRideRadius.large,
-        ),
-        border: Border.all(
-          color: LinkRideColors.border,
-        ),
+        color: LinkRideColors.surface.withValues(alpha: 0.84),
+        borderRadius: BorderRadius.circular(LinkRideRadius.large),
+        border: Border.all(color: LinkRideColors.border),
       ),
       child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Flexible(
             child: Text(
               'New to Link Ride?',
               style: TextStyle(
                 fontSize: 13,
-                color:
-                    LinkRideColors.textSecondary,
+                color: LinkRideColors.textSecondary,
               ),
             ),
           ),
@@ -542,20 +474,15 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
           InkWell(
             onTap: createAccount,
-            borderRadius:
-                BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(8),
             child: const Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 5,
-                vertical: 5,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
               child: Text(
                 'Create Account',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
-                  color:
-                      LinkRideColors.primaryBlue,
+                  color: LinkRideColors.primaryBlue,
                 ),
               ),
             ),
@@ -576,17 +503,11 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     );
   }
 
-  Widget _backgroundCircle({
-    required double size,
-    required Color color,
-  }) {
+  Widget _backgroundCircle({required double size, required Color color}) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }

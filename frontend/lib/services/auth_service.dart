@@ -17,14 +17,98 @@ class AuthService {
       body: jsonEncode({'email': email, 'password': password}),
     );
 
-    final Map<String, dynamic> responseData =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    Map<String, dynamic> responseData = {};
+
+    if (response.body.trim().isNotEmpty) {
+      try {
+        final dynamic decoded = jsonDecode(response.body);
+
+        if (decoded is Map<String, dynamic>) {
+          responseData = decoded;
+        } else if (decoded is Map) {
+          responseData = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        // Keep the fallback error below if the
+        // backend response is not valid JSON.
+      }
+    }
 
     if (response.statusCode == 200) {
       return responseData;
     }
 
-    throw Exception(responseData['message'] ?? 'Login failed');
+    throw Exception(
+      responseData['message'] ??
+          'Unable to sign in. Server returned ${response.statusCode}.',
+    );
+  }
+
+  Future<Map<String, dynamic>> verifyMfa({
+    required String email,
+    required String code,
+  }) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/users/verify-mfa');
+
+    final http.Response response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'code': code}),
+    );
+
+    Map<String, dynamic> responseData = {};
+
+    if (response.body.trim().isNotEmpty) {
+      final dynamic decoded = jsonDecode(response.body);
+
+      if (decoded is Map<String, dynamic>) {
+        responseData = decoded;
+      } else if (decoded is Map) {
+        responseData = Map<String, dynamic>.from(decoded);
+      }
+    }
+
+    if (response.statusCode == 200) {
+      return responseData;
+    }
+
+    throw Exception(
+      responseData['message'] ?? 'Unable to verify the sign-in code.',
+    );
+  }
+
+  Future<void> resendMfaCode({required String email}) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/users/resend-mfa');
+
+    final http.Response response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+
+    if (response.statusCode == 204 || response.statusCode == 200) {
+      return;
+    }
+
+    Map<String, dynamic> responseData = {};
+
+    if (response.body.trim().isNotEmpty) {
+      try {
+        final dynamic decoded = jsonDecode(response.body);
+
+        if (decoded is Map<String, dynamic>) {
+          responseData = decoded;
+        } else if (decoded is Map) {
+          responseData = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        // Preserve fallback message below.
+      }
+    }
+
+    throw Exception(
+      responseData['message'] ?? 'Unable to resend the sign-in code.',
+    );
   }
 
   Future<Map<String, dynamic>> register({
