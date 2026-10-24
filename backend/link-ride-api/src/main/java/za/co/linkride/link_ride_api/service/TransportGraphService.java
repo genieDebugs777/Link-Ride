@@ -1,11 +1,11 @@
 package za.co.linkride.link_ride_api.service;
 
 import org.springframework.stereotype.Service;
-import za.co.linkride.link_ride_api.model.Route;
+import za.co.linkride.link_ride_api.dto.ProviderNetworkResponse;
+import za.co.linkride.link_ride_api.dto.ProviderRouteResponse;
 import za.co.linkride.link_ride_api.model.RouteStop;
 import za.co.linkride.link_ride_api.model.Stop;
 import za.co.linkride.link_ride_api.model.StopTransfer;
-import za.co.linkride.link_ride_api.repository.RouteRepository;
 import za.co.linkride.link_ride_api.repository.RouteStopRepository;
 import za.co.linkride.link_ride_api.repository.StopRepository;
 import za.co.linkride.link_ride_api.repository.StopTransferRepository;
@@ -19,21 +19,21 @@ import java.util.Map;
 @Service
 public class TransportGraphService {
 
-    private final RouteRepository routeRepository;
+    private final TransportIntegrationService transportIntegrationService;
     private final RouteStopRepository routeStopRepository;
     private final StopRepository stopRepository;
     private final StopTransferRepository stopTransferRepository;
     private final NearbyWalkConnectorService nearbyWalkConnectorService;
 
     public TransportGraphService(
-            RouteRepository routeRepository,
+            TransportIntegrationService transportIntegrationService,
             RouteStopRepository routeStopRepository,
             StopRepository stopRepository,
             StopTransferRepository stopTransferRepository,
             NearbyWalkConnectorService nearbyWalkConnectorService) {
 
-        this.routeRepository =
-                routeRepository;
+        this.transportIntegrationService =
+                transportIntegrationService;
 
         this.routeStopRepository =
                 routeStopRepository;
@@ -80,79 +80,88 @@ public class TransportGraphService {
     }
 
     /*
-     * Creates transport-service edges from the
-     * ordered RouteStop records.
+     * Creates transport-service edges using route
+     * metadata supplied by the provider abstraction.
      *
-     * Example:
-     *
-     * Pretoria
-     * -> Pretoria-wes
-     * -> Rebecca
-     * -> ...
+     * Route-stop ordering remains persisted in the
+     * Link Ride controlled dataset because it is part
+     * of the prototype's normalised internal model.
      */
     private void addRouteEdges(
             Map<Long, List<GraphEdge>> graph) {
 
-        List<Route> routes =
-                routeRepository.findAll();
+        List<ProviderNetworkResponse> providerNetwork =
+                transportIntegrationService
+                        .getUnifiedProviderNetwork();
 
         List<RouteStop> allRouteStops =
                 routeStopRepository.findAll();
 
-        for (Route route : routes) {
+        for (ProviderNetworkResponse provider :
+                providerNetwork) {
 
-            List<RouteStop> orderedStops =
-                    allRouteStops.stream()
-                            .filter(
-                                    routeStop ->
-                                            routeStop
-                                                    .getRouteId()
-                                                    .equals(
-                                                            route.getRouteId()
-                                                    )
+            for (ProviderRouteResponse route :
+                    provider.getRoutes()) {
+
+                if (!"ACTIVE".equalsIgnoreCase(
+                        route.getRouteStatus())) {
+
+                    continue;
+                }
+
+                List<RouteStop> orderedStops =
+                        allRouteStops.stream()
+                                .filter(
+                                        routeStop ->
+                                                routeStop
+                                                        .getRouteId()
+                                                        .equals(
+                                                                route.getRouteId()
+                                                        )
+                                )
+                                .sorted(
+                                        Comparator.comparing(
+                                                RouteStop::getStopOrder
+                                        )
+                                )
+                                .toList();
+
+                for (int index = 0;
+                     index < orderedStops.size() - 1;
+                     index++) {
+
+                    RouteStop current =
+                            orderedStops.get(
+                                    index
+                            );
+
+                    RouteStop next =
+                            orderedStops.get(
+                                    index + 1
+                            );
+
+                    addEdge(
+                            graph,
+                            current.getStopId(),
+                            new GraphEdge(
+                                    next.getStopId(),
+                                    route.getRouteId(),
+                                    route.getTransportMode(),
+                                    false
                             )
-                            .sorted(
-                                    Comparator.comparing(
-                                            RouteStop::getStopOrder
-                                    )
+                    );
+
+                    addEdge(
+                            graph,
+                            next.getStopId(),
+                            new GraphEdge(
+                                    current.getStopId(),
+                                    route.getRouteId(),
+                                    route.getTransportMode(),
+                                    false
                             )
-                            .toList();
-
-            for (int index = 0;
-                 index < orderedStops.size() - 1;
-                 index++) {
-
-                RouteStop current =
-                        orderedStops.get(
-                                index
-                        );
-
-                RouteStop next =
-                        orderedStops.get(
-                                index + 1
-                        );
-
-                addEdge(
-                        graph,
-                        current.getStopId(),
-                        new GraphEdge(
-                                next.getStopId(),
-                                route.getRouteId(),
-                                route.getTransportMode(),
-                                false
-                        )
-                );
-
-                addEdge(
-                        graph,
-                        next.getStopId(),
-                        new GraphEdge(
-                                current.getStopId(),
-                                route.getRouteId(),
-                                route.getTransportMode(),
-                                false
-                        )
-                );
+                    );
+                }
             }
         }
     }
