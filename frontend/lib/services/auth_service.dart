@@ -3,8 +3,25 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'api_config.dart';
+import 'push_registration_service.dart';
 
 class AuthService {
+  final PushRegistrationService _pushRegistrationService =
+      PushRegistrationService();
+
+  Future<void> _syncPushRegistration(Map<String, dynamic> responseData) async {
+    final dynamic tokenValue = responseData['token'];
+    if (tokenValue is! String || tokenValue.trim().isEmpty) {
+      return;
+    }
+
+    try {
+      await _pushRegistrationService.syncWithToken(token: tokenValue);
+    } catch (_) {
+      // Push registration is best-effort and must never fail authentication.
+    }
+  }
+
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
@@ -35,6 +52,7 @@ class AuthService {
     }
 
     if (response.statusCode == 200) {
+      await _syncPushRegistration(responseData);
       return responseData;
     }
 
@@ -69,6 +87,7 @@ class AuthService {
     }
 
     if (response.statusCode == 200) {
+      await _syncPushRegistration(responseData);
       return responseData;
     }
 
