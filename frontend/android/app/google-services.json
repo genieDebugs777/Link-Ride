@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "948548182641",
+    "project_id": "link-ride-6ea67",
+    "storage_bucket": "link-ride-6ea67.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:948548182641:android:c2a8c51975dd559c6831d0",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAA5uB9pWxQQxsGSKd1dYXED_dnkQUbXHo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
