@@ -19,6 +19,11 @@ public interface PaymentRepository
             Long journeyId
     );
 
+    Optional<Payment>
+    findByTransactionReference(
+            String transactionReference
+    );
+
     boolean existsByTransactionReference(
             String transactionReference
     );
