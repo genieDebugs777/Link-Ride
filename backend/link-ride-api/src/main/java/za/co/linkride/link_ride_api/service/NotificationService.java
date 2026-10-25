@@ -2,6 +2,10 @@ package za.co.linkride.link_ride_api.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import za.co.linkride.link_ride_api.event.DisruptionEvent;
 import za.co.linkride.link_ride_api.model.Journey;
 import za.co.linkride.link_ride_api.model.JourneyLeg;
@@ -18,6 +22,10 @@ import java.util.Set;
 @Service
 public class NotificationService {
 
+    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
+
+    private final FirebasePushNotificationService firebasePushNotificationService;
+
     private final NotificationRepository notificationRepository;
     private final JourneyLegRepository journeyLegRepository;
     private final JourneyRepository journeyRepository;
@@ -28,7 +36,8 @@ public class NotificationService {
             NotificationRepository notificationRepository,
             JourneyLegRepository journeyLegRepository,
             JourneyRepository journeyRepository,
-            NotificationPreferenceService notificationPreferenceService) {
+            NotificationPreferenceService notificationPreferenceService,
+            FirebasePushNotificationService firebasePushNotificationService) {
 
         this.notificationRepository =
                 notificationRepository;
@@ -41,6 +50,8 @@ public class NotificationService {
 
         this.notificationPreferenceService =
                 notificationPreferenceService;
+
+        this.firebasePushNotificationService = firebasePushNotificationService;
     }
 
     @Transactional
@@ -143,10 +154,44 @@ public class NotificationService {
                     notification
             );
 
+            // Only send once the database transaction has successfully committed.
+            // A failed or rolled-back save must not trigger an external push.
+            schedulePushAfterCommit(userId, event, eventType);
+
             createdCount++;
         }
 
         return createdCount;
+    }
+
+    private void schedulePushAfterCommit(Long userId, DisruptionEvent event, String eventType) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()
+                || !TransactionSynchronizationManager.isActualTransactionActive()) {
+            // Do not send pre-commit; this service is expected to run transactionally.
+            log.warn("Skipping FCM push: no active transaction for disruption {}",
+                    event.getDisruptionId());
+            return;
+        }
+
+        Long disruptionId = event.getDisruptionId();
+        Long routeId = event.getRouteId();
+        String type = eventType;
+        String severity = normalizeSeverity(event.getSeverity());
+        String title = notificationTitle(event);
+        String body = notificationMessage(event);
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    firebasePushNotificationService.sendDisruptionNotification(
+                            userId, disruptionId, routeId, type, severity, title, body);
+                } catch (Exception error) {
+                    log.warn("FCM after-commit dispatch failed for user {}: {}",
+                            userId, error.toString());
+                }
+            }
+        });
     }
 
     public List<Notification> getNotificationsForUser(

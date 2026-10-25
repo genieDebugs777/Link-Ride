@@ -19,7 +19,6 @@ class _OperatorConsoleScreenState extends State<OperatorConsoleScreen> {
   final DisruptionService _disruptionService = DisruptionService();
 
   bool _isLoading = true;
-  bool _isSubmitting = false;
   String? _errorMessage;
 
   List<Map<String, dynamic>> _activeDisruptions = [];
@@ -80,216 +79,20 @@ class _OperatorConsoleScreenState extends State<OperatorConsoleScreen> {
   }
 
   Future<void> _openCreateDisruption() async {
-    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-
-    final TextEditingController routeIdController = TextEditingController();
-
-    final TextEditingController titleController = TextEditingController();
-
-    final TextEditingController descriptionController = TextEditingController();
-
-    String selectedType = 'DELAY';
-    String selectedSeverity = 'MEDIUM';
-
     final bool? created = await showDialog<bool>(
       context: context,
-      barrierDismissible: !_isSubmitting,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setDialogState) {
-            Future<void> submit() async {
-              if (_isSubmitting ||
-                  !(formKey.currentState?.validate() ?? false)) {
-                return;
-              }
-
-              setDialogState(() {
-                _isSubmitting = true;
-              });
-
-              try {
-                final String? token = await _authStorage.getToken();
-
-                if (token == null || token.isEmpty) {
-                  throw Exception('Your Link Ride session is no longer valid.');
-                }
-
-                await _disruptionService.createDisruption(
-                  token: token,
-                  routeId: int.parse(routeIdController.text.trim()),
-                  disruptionType: selectedType,
-                  severity: selectedSeverity,
-                  title: titleController.text,
-                  description: descriptionController.text,
-                );
-
-                if (!dialogContext.mounted) {
-                  return;
-                }
-
-                Navigator.pop(dialogContext, true);
-              } catch (error) {
-                if (!dialogContext.mounted) {
-                  return;
-                }
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      error.toString().replaceFirst('Exception: ', ''),
-                    ),
-                  ),
-                );
-              } finally {
-                if (dialogContext.mounted) {
-                  setDialogState(() {
-                    _isSubmitting = false;
-                  });
-                } else {
-                  _isSubmitting = false;
-                }
-              }
-            }
-
-            return AlertDialog(
-              title: const Text('Create disruption'),
-              content: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: routeIdController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Route ID',
-                          helperText: 'Use the route ID from the current controlled dataset.',
-                        ),
-                        validator: (String? value) {
-                          final int? routeId = int.tryParse(
-                            value?.trim() ?? '',
-                          );
-
-                          if (routeId == null || routeId <= 0) {
-                            return 'Enter a valid route ID.';
-                          }
-
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedType,
-                        decoration: const InputDecoration(
-                          labelText: 'Disruption type',
-                        ),
-                        items: _disruptionTypes.map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(_displayEnum(value)),
-                          );
-                        }).toList(),
-                        onChanged: (String? value) {
-                          if (value == null) {
-                            return;
-                          }
-
-                          setDialogState(() {
-                            selectedType = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedSeverity,
-                        decoration: const InputDecoration(
-                          labelText: 'Severity',
-                        ),
-                        items: _severities.map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(_displayEnum(value)),
-                          );
-                        }).toList(),
-                        onChanged: (String? value) {
-                          if (value == null) {
-                            return;
-                          }
-
-                          setDialogState(() {
-                            selectedSeverity = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      TextFormField(
-                        controller: titleController,
-                        decoration: const InputDecoration(labelText: 'Title'),
-                        validator: (String? value) {
-                          if ((value ?? '').trim().isEmpty) {
-                            return 'Enter a disruption title.';
-                          }
-
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      TextFormField(
-                        controller: descriptionController,
-                        minLines: 3,
-                        maxLines: 5,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                          alignLabelWithHint: true,
-                        ),
-                        validator: (String? value) {
-                          if ((value ?? '').trim().isEmpty) {
-                            return 'Enter a disruption description.';
-                          }
-
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: _isSubmitting
-                      ? null
-                      : () {
-                          Navigator.pop(dialogContext, false);
-                        },
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: _isSubmitting ? null : submit,
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Create'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => _CreateDisruptionDialog(
+        authStorage: _authStorage,
+        disruptionService: _disruptionService,
+      ),
     );
 
-    routeIdController.dispose();
-    titleController.dispose();
-    descriptionController.dispose();
-
-    if (created == true && mounted) {
+    if (!mounted) return;
+    if (created == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Disruption created successfully.')),
       );
-
       await _loadDisruptions();
     }
   }
@@ -925,5 +728,194 @@ class _OperatorConsoleScreenState extends State<OperatorConsoleScreen> {
       default:
         return LinkRideColors.successSoft;
     }
+  }
+}
+
+/// Owns its text controllers for the entire lifetime of the dialog route.
+/// This prevents controllers from being disposed while the closing animation
+/// still has TextFormFields mounted.
+class _CreateDisruptionDialog extends StatefulWidget {
+  final AuthStorage authStorage;
+  final DisruptionService disruptionService;
+
+  const _CreateDisruptionDialog({
+    required this.authStorage,
+    required this.disruptionService,
+  });
+
+  @override
+  State<_CreateDisruptionDialog> createState() =>
+      _CreateDisruptionDialogState();
+}
+
+class _CreateDisruptionDialogState extends State<_CreateDisruptionDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _routeIdController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+
+  String _selectedType = 'DELAY';
+  String _selectedSeverity = 'MEDIUM';
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _routeIdController.dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_submitting || !(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _submitting = true);
+
+    try {
+      final String? token = await widget.authStorage.getToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('Your Link Ride session is no longer valid.');
+      }
+
+      await widget.disruptionService.createDisruption(
+        token: token,
+        routeId: int.parse(_routeIdController.text.trim()),
+        disruptionType: _selectedType,
+        severity: _selectedSeverity,
+        title: _titleController.text,
+        description: _descriptionController.text,
+      );
+
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+      setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !_submitting,
+      child: AlertDialog(
+        title: const Text('Create disruption'),
+        content: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _routeIdController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Route ID',
+                    helperText:
+                        'Use the route ID from the current controlled dataset.',
+                  ),
+                  validator: (String? value) {
+                    final int? routeId = int.tryParse(value?.trim() ?? '');
+                    return routeId == null || routeId <= 0
+                        ? 'Enter a valid route ID.'
+                        : null;
+                  },
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedType,
+                  decoration: const InputDecoration(
+                    labelText: 'Disruption type',
+                  ),
+                  items: _OperatorConsoleScreenState._disruptionTypes
+                      .map(
+                        (String value) => DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(
+                            _OperatorConsoleScreenState._displayEnum(value),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _submitting
+                      ? null
+                      : (String? value) {
+                          if (value != null) {
+                            setState(() => _selectedType = value);
+                          }
+                        },
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedSeverity,
+                  decoration: const InputDecoration(labelText: 'Severity'),
+                  items: _OperatorConsoleScreenState._severities
+                      .map(
+                        (String value) => DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(
+                            _OperatorConsoleScreenState._displayEnum(value),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _submitting
+                      ? null
+                      : (String? value) {
+                          if (value != null) {
+                            setState(() => _selectedSeverity = value);
+                          }
+                        },
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                  validator: (String? value) => (value ?? '').trim().isEmpty
+                      ? 'Enter a disruption title.'
+                      : null,
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _descriptionController,
+                  minLines: 3,
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    alignLabelWithHint: true,
+                  ),
+                  validator: (String? value) => (value ?? '').trim().isEmpty
+                      ? 'Enter a disruption description.'
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _submitting
+                ? null
+                : () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: _submitting ? null : _submit,
+            child: _submitting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Create'),
+          ),
+        ],
+      ),
+    );
   }
 }
