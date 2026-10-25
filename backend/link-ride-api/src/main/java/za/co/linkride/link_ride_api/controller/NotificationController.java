@@ -3,11 +3,13 @@ package za.co.linkride.link_ride_api.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import za.co.linkride.link_ride_api.dto.FirebaseInstallationRequest;
+import za.co.linkride.link_ride_api.dto.NotificationPreferencesRequest;
 import za.co.linkride.link_ride_api.model.Notification;
 import za.co.linkride.link_ride_api.model.NotificationPreference;
-import za.co.linkride.link_ride_api.dto.NotificationPreferencesRequest;
-import za.co.linkride.link_ride_api.service.NotificationService;
+import za.co.linkride.link_ride_api.service.FirebaseInstallationService;
 import za.co.linkride.link_ride_api.service.NotificationPreferenceService;
+import za.co.linkride.link_ride_api.service.NotificationService;
 
 import java.util.List;
 import java.util.Map;
@@ -17,205 +19,145 @@ import java.util.Map;
 public class NotificationController {
 
     private final NotificationService notificationService;
-    private final NotificationPreferenceService
-            notificationPreferenceService;
+    private final NotificationPreferenceService notificationPreferenceService;
+    private final FirebaseInstallationService firebaseInstallationService;
 
     public NotificationController(
             NotificationService notificationService,
-            NotificationPreferenceService notificationPreferenceService) {
-
-        this.notificationService =
-                notificationService;
-
-        this.notificationPreferenceService =
-                notificationPreferenceService;
+            NotificationPreferenceService notificationPreferenceService,
+            FirebaseInstallationService firebaseInstallationService) {
+        this.notificationService = notificationService;
+        this.notificationPreferenceService = notificationPreferenceService;
+        this.firebaseInstallationService = firebaseInstallationService;
     }
 
-    @GetMapping("/preferences")
-    public ResponseEntity<?>
-    getPreferences(
+    @PostMapping("/devices")
+    public ResponseEntity<?> registerFirebaseInstallation(
+            @RequestBody FirebaseInstallationRequest request,
             Authentication authentication) {
-
-        Long userId =
-                authenticatedUserId(
-                        authentication
-                );
-
+        Long userId = authenticatedUserId(authentication);
         if (userId == null) {
-            return ResponseEntity
-                    .status(401)
-                    .build();
-        }
-
-        return ResponseEntity.ok(
-                notificationPreferenceService
-                        .getPreferences(
-                                userId
-                        )
-        );
-    }
-
-    @PutMapping("/preferences")
-    public ResponseEntity<?>
-    savePreferences(
-            @RequestBody NotificationPreferencesRequest request,
-            Authentication authentication) {
-
-        Long userId =
-                authenticatedUserId(
-                        authentication
-                );
-
-        if (userId == null) {
-            return ResponseEntity
-                    .status(401)
-                    .build();
-        }
-
-        NotificationPreference saved =
-                notificationPreferenceService
-                        .savePreferences(
-                                userId,
-                                request
-                        );
-
-        return ResponseEntity.ok(
-                saved
-        );
-    }
-
-    @GetMapping("/mine")
-    public ResponseEntity<?>
-    getMyNotifications(
-            Authentication authentication) {
-
-        Long userId =
-                authenticatedUserId(
-                        authentication
-                );
-
-        if (userId == null) {
-            return ResponseEntity
-                    .status(401)
-                    .build();
-        }
-
-        List<Notification> notifications =
-                notificationService
-                        .getNotificationsForUser(
-                                userId
-                        );
-
-        return ResponseEntity.ok(
-                notifications
-        );
-    }
-
-    @GetMapping("/unread-count")
-    public ResponseEntity<?>
-    getUnreadCount(
-            Authentication authentication) {
-
-        Long userId =
-                authenticatedUserId(
-                        authentication
-                );
-
-        if (userId == null) {
-            return ResponseEntity
-                    .status(401)
-                    .build();
-        }
-
-        return ResponseEntity.ok(
-                Map.of(
-                        "unreadCount",
-                        notificationService
-                                .getUnreadCount(
-                                        userId
-                                )
-                )
-        );
-    }
-
-    @PutMapping("/{notificationId}/read")
-    public ResponseEntity<?>
-    markAsRead(
-            @PathVariable
-            Long notificationId,
-            Authentication authentication) {
-
-        Long userId =
-                authenticatedUserId(
-                        authentication
-                );
-
-        if (userId == null) {
-            return ResponseEntity
-                    .status(401)
-                    .build();
+            return ResponseEntity.status(401).build();
         }
 
         try {
             return ResponseEntity.ok(
-                    notificationService
-                            .markAsRead(
-                                    userId,
-                                    notificationId
-                            )
+                    firebaseInstallationService.register(
+                            userId,
+                            request.getFirebaseInstallationId()
+                    )
             );
-
         } catch (IllegalArgumentException error) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(
-                            error.getMessage()
-                    );
+            return ResponseEntity.badRequest().body(error.getMessage());
+        }
+    }
+
+    @DeleteMapping("/devices")
+    public ResponseEntity<?> unregisterFirebaseInstallation(
+            @RequestBody FirebaseInstallationRequest request,
+            Authentication authentication) {
+        Long userId = authenticatedUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        try {
+            firebaseInstallationService.unregister(
+                    userId,
+                    request.getFirebaseInstallationId()
+            );
+            return ResponseEntity.ok(Map.of("removed", true));
+        } catch (IllegalArgumentException error) {
+            return ResponseEntity.badRequest().body(error.getMessage());
+        }
+    }
+
+    @GetMapping("/preferences")
+    public ResponseEntity<?> getPreferences(Authentication authentication) {
+        Long userId = authenticatedUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(
+                notificationPreferenceService.getPreferences(userId)
+        );
+    }
+
+    @PutMapping("/preferences")
+    public ResponseEntity<?> savePreferences(
+            @RequestBody NotificationPreferencesRequest request,
+            Authentication authentication) {
+        Long userId = authenticatedUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        NotificationPreference saved =
+                notificationPreferenceService.savePreferences(userId, request);
+
+        return ResponseEntity.ok(saved);
+    }
+
+    @GetMapping("/mine")
+    public ResponseEntity<?> getMyNotifications(Authentication authentication) {
+        Long userId = authenticatedUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        List<Notification> notifications =
+                notificationService.getNotificationsForUser(userId);
+
+        return ResponseEntity.ok(notifications);
+    }
+
+    @GetMapping("/unread-count")
+    public ResponseEntity<?> getUnreadCount(Authentication authentication) {
+        Long userId = authenticatedUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        return ResponseEntity.ok(
+                Map.of("unreadCount", notificationService.getUnreadCount(userId))
+        );
+    }
+
+    @PutMapping("/{notificationId}/read")
+    public ResponseEntity<?> markAsRead(
+            @PathVariable Long notificationId,
+            Authentication authentication) {
+        Long userId = authenticatedUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        try {
+            return ResponseEntity.ok(
+                    notificationService.markAsRead(userId, notificationId)
+            );
+        } catch (IllegalArgumentException error) {
+            return ResponseEntity.badRequest().body(error.getMessage());
         }
     }
 
     @PutMapping("/read-all")
-    public ResponseEntity<?>
-    markAllAsRead(
-            Authentication authentication) {
-
-        Long userId =
-                authenticatedUserId(
-                        authentication
-                );
-
+    public ResponseEntity<?> markAllAsRead(Authentication authentication) {
+        Long userId = authenticatedUserId(authentication);
         if (userId == null) {
-            return ResponseEntity
-                    .status(401)
-                    .build();
+            return ResponseEntity.status(401).build();
         }
 
-        int updated =
-                notificationService
-                        .markAllAsRead(
-                                userId
-                        );
-
-        return ResponseEntity.ok(
-                Map.of(
-                        "updated",
-                        updated
-                )
-        );
+        int updated = notificationService.markAllAsRead(userId);
+        return ResponseEntity.ok(Map.of("updated", updated));
     }
 
-    private Long authenticatedUserId(
-            Authentication authentication) {
-
-        if (authentication == null
-                || !authentication.isAuthenticated()) {
-
+    private Long authenticatedUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
             return null;
         }
 
-        Object details =
-                authentication.getDetails();
-
+        Object details = authentication.getDetails();
         if (details instanceof Long userId) {
             return userId;
         }
