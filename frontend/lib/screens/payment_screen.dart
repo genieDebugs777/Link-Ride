@@ -1,113 +1,132 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../services/auth_storage.dart';
 import '../services/payment_service.dart';
 import '../services/ticket_service.dart';
-import '../theme/link_ride_theme.dart';
 
 class PaymentScreen extends StatefulWidget {
   final Map<String, dynamic> journey;
 
-  const PaymentScreen({
-    super.key,
-    required this.journey,
-  });
+  const PaymentScreen({super.key, required this.journey});
 
   @override
-  State<PaymentScreen> createState() =>
-      _PaymentScreenState();
+  State<PaymentScreen> createState() => _PaymentScreenState();
 }
 
-class _PaymentScreenState
-    extends State<PaymentScreen> {
-  final AuthStorage _authStorage =
-      AuthStorage();
+class _PaymentScreenState extends State<PaymentScreen>
+    with WidgetsBindingObserver {
+  static const Color primaryBlue = Color(0xFF003F73);
 
-  final PaymentService _paymentService =
-      PaymentService();
+  static const Color linkGreen = Color(0xFF4A9B45);
 
-  final TicketService _ticketService =
-      TicketService();
+  static const Color background = Color(0xFFF7F9FB);
+
+  static const Color textPrimary = Color(0xFF17212B);
+
+  static const Color textSecondary = Color(0xFF667085);
+
+  static const Color cardBorder = Color(0xFFE4E9EE);
+
+  final AuthStorage _authStorage = AuthStorage();
+
+  final PaymentService _paymentService = PaymentService();
+
+  final TicketService _ticketService = TicketService();
 
   String _selectedMethod = 'CARD';
 
   bool _isProcessing = false;
 
+  String? _pendingPaystackReference;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        _pendingPaystackReference != null &&
+        !_isProcessing) {
+      Future<void>.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && _pendingPaystackReference != null && !_isProcessing) {
+          _verifyPendingPaystack();
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final int journeyId =
-        _asInt(
-      widget.journey['journeyId'],
-    );
+    final int journeyId = _asInt(widget.journey['journeyId']);
 
     final String origin =
-        widget.journey['origin']
-                ?.toString() ??
-            'Unknown origin';
+        widget.journey['origin']?.toString() ?? 'Unknown origin';
 
     final String destination =
-        widget.journey['destination']
-                ?.toString() ??
-            'Unknown destination';
+        widget.journey['destination']?.toString() ?? 'Unknown destination';
 
-    final int duration =
-        _asInt(
-      widget.journey[
-          'estimatedDuration'],
-    );
+    final int duration = _asInt(widget.journey['estimatedDuration']);
 
-    final double cost =
-        _asDouble(
-      widget.journey[
-          'estimatedCost'],
-    );
+    final double cost = _asDouble(widget.journey['estimatedCost']);
+
+    final bool awaitingVerification = _pendingPaystackReference != null;
 
     return Scaffold(
-      backgroundColor:
-          LinkRideColors.background,
+      backgroundColor: background,
+
       appBar: AppBar(
+        backgroundColor: Colors.white,
+
+        surfaceTintColor: Colors.white,
+
+        elevation: 0,
+
         leading: IconButton(
-          tooltip: 'Back',
           onPressed: () {
             Navigator.pop(context);
           },
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-          ),
+
+          icon: const Icon(Icons.arrow_back_rounded, color: primaryBlue),
         ),
+
         title: const Text(
           'Payment',
+
+          style: TextStyle(
+            color: primaryBlue,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
+
       body: SafeArea(
-        top: false,
         child: SingleChildScrollView(
-          padding:
-              const EdgeInsets.fromLTRB(
-            20,
-            14,
-            20,
-            30,
-          ),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
+
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+
             children: [
-              _checkoutHeader(
-                cost,
-              ),
-
-              const SizedBox(height: 22),
-
               const Text(
                 'Journey Summary',
+
                 style: TextStyle(
-                  fontSize: 19,
-                  fontWeight:
-                      FontWeight.w800,
-                  color:
-                      LinkRideColors
-                          .textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: textPrimary,
                 ),
               ),
 
@@ -116,147 +135,142 @@ class _PaymentScreenState
               _journeySummaryCard(
                 journeyId: journeyId,
                 origin: origin,
-                destination:
-                    destination,
+                destination: destination,
                 duration: duration,
                 cost: cost,
               ),
 
-              const SizedBox(height: 26),
+              const SizedBox(height: 24),
 
               const Text(
                 'Payment Method',
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight:
-                      FontWeight.w800,
-                  color:
-                      LinkRideColors
-                          .textPrimary,
-                ),
-              ),
 
-              const SizedBox(height: 6),
-
-              const Text(
-                'Choose how you want to complete this prototype payment.',
                 style: TextStyle(
-                  fontSize: 12.5,
-                  height: 1.4,
-                  color:
-                      LinkRideColors
-                          .textSecondary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: textPrimary,
                 ),
               ),
 
               const SizedBox(height: 12),
 
-              RadioGroup<String>(
-                groupValue: _selectedMethod,
-                onChanged: (String? value) {
-                  if (value == null) {
-                    return;
-                  }
+              _paymentMethodCard(
+                value: 'CARD',
+                icon: Icons.credit_card_rounded,
+                title: 'Card',
+                subtitle: 'Secure Paystack test checkout',
+              ),
 
-                  setState(() {
-                    _selectedMethod = value;
-                  });
-                },
-                child: Column(
+              const SizedBox(height: 10),
+
+              _paymentMethodCard(
+                value: 'WALLET',
+                icon: Icons.account_balance_wallet_rounded,
+                title: 'Link Ride Wallet',
+                subtitle: 'Prototype wallet option',
+              ),
+
+              const SizedBox(height: 24),
+
+              Container(
+                width: double.infinity,
+
+                padding: const EdgeInsets.all(16),
+
+                decoration: BoxDecoration(
+                  color: primaryBlue.withValues(alpha: 0.05),
+
+                  borderRadius: BorderRadius.circular(18),
+                ),
+
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+
                   children: [
-                    _paymentMethodCard(
-                      value: 'CARD',
-                      icon:
-                          Icons.credit_card_rounded,
-                      title: 'Card',
-                      subtitle:
-                          'Prototype card payment',
-                      accent:
-                          LinkRideColors.primaryBlue,
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      size: 20,
+                      color: primaryBlue,
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(width: 10),
 
-                    _paymentMethodCard(
-                      value: 'WALLET',
-                      icon: Icons
-                          .account_balance_wallet_rounded,
-                      title:
-                          'Link Ride Wallet',
-                      subtitle:
-                          'Prototype wallet option',
-                      accent:
-                          LinkRideColors.linkGreen,
+                    Expanded(
+                      child: Text(
+                        awaitingVerification
+                            ? 'Paystack checkout has been opened. Complete the test payment, then return to Link Ride. Verification will run automatically, or you can use the button below.'
+                            : _selectedMethod == 'CARD'
+                            ? 'Card payments use Paystack Test Mode. No real money is charged during this prototype flow.'
+                            : 'The Link Ride Wallet remains a simulated prototype payment option.',
+
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.45,
+                          color: textSecondary,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 22),
-
-              _prototypeNotice(),
-
               const SizedBox(height: 24),
 
-              _payButton(
-                journeyId: journeyId,
-                cost: cost,
+              SizedBox(
+                width: double.infinity,
+
+                height: 50,
+
+                child: ElevatedButton(
+                  onPressed: _isProcessing
+                      ? null
+                      : awaitingVerification
+                      ? _verifyPendingPaystack
+                      : () => _processPayment(journeyId),
+
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryBlue,
+
+                    foregroundColor: Colors.white,
+
+                    disabledBackgroundColor: primaryBlue.withValues(
+                      alpha: 0.55,
+                    ),
+
+                    elevation: 0,
+
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+
+                  child: _isProcessing
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          awaitingVerification
+                              ? 'Verify payment'
+                              : _selectedMethod == 'CARD'
+                              ? 'Pay R${cost.toStringAsFixed(2)} with Paystack'
+                              : 'Pay R${cost.toStringAsFixed(2)}',
+
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _checkoutHeader(
-    double cost,
-  ) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration:
-          LinkRideDecorations.blueCard(),
-      child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Complete your journey payment',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight:
-                  FontWeight.w600,
-              color: Colors.white
-                  .withValues(alpha: 0.78),
-            ),
-          ),
-
-          const SizedBox(height: 7),
-
-          Text(
-            'R${cost.toStringAsFixed(2)}',
-            style: const TextStyle(
-              fontSize: 30,
-              fontWeight:
-                  FontWeight.w800,
-              letterSpacing: -0.8,
-              color: Colors.white,
-            ),
-          ),
-
-          const SizedBox(height: 6),
-
-          Text(
-            'The amount is based on the selected journey stored by Link Ride.',
-            style: TextStyle(
-              fontSize: 12.5,
-              height: 1.4,
-              color: Colors.white
-                  .withValues(alpha: 0.74),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -270,178 +284,73 @@ class _PaymentScreenState
   }) {
     return Container(
       width: double.infinity,
-      decoration:
-          LinkRideDecorations.card(),
+
+      padding: const EdgeInsets.all(18),
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+
+        borderRadius: BorderRadius.circular(20),
+
+        border: Border.all(color: cardBorder),
+      ),
+
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              15,
-              16,
-              14,
-            ),
-            decoration: BoxDecoration(
-              color:
-                  LinkRideColors.softBlue,
-              borderRadius:
-                  const BorderRadius.vertical(
-                top: Radius.circular(
-                  LinkRideRadius.large,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration:
-                      const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.route_rounded,
-                    size: 20,
-                    color:
-                        LinkRideColors
-                            .primaryBlue,
-                  ),
-                ),
+          Text(
+            'Journey #$journeyId',
 
-                const SizedBox(width: 11),
-
-                Expanded(
-                  child: Text(
-                    'Journey #$journeyId',
-                    style:
-                        const TextStyle(
-                      fontSize: 14.5,
-                      fontWeight:
-                          FontWeight.w800,
-                      color:
-                          LinkRideColors
-                              .textPrimary,
-                    ),
-                  ),
-                ),
-
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
-                  ),
-                  decoration:
-                      BoxDecoration(
-                    color:
-                        LinkRideColors
-                            .primaryBlue
-                            .withValues(
-                      alpha: 0.09,
-                    ),
-                    borderRadius:
-                        BorderRadius.circular(
-                      LinkRideRadius.pill,
-                    ),
-                  ),
-                  child: const Text(
-                    'CHECKOUT',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight:
-                          FontWeight.w800,
-                      letterSpacing: 0.4,
-                      color:
-                          LinkRideColors
-                              .primaryBlue,
-                    ),
-                  ),
-                ),
-              ],
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: textPrimary,
             ),
           ),
 
+          const SizedBox(height: 16),
+
+          _locationRow(
+            icon: Icons.trip_origin_rounded,
+            color: linkGreen,
+            text: origin,
+          ),
+
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              16,
-            ),
-            child: Column(
-              children: [
-                _locationRow(
-                  icon: Icons
-                      .trip_origin_rounded,
-                  color:
-                      LinkRideColors.linkGreen,
-                  label: 'FROM',
-                  text: origin,
+            padding: const EdgeInsets.only(left: 7),
+
+            child: Container(width: 2, height: 18, color: cardBorder),
+          ),
+
+          _locationRow(
+            icon: Icons.location_on_rounded,
+            color: primaryBlue,
+            text: destination,
+          ),
+
+          const SizedBox(height: 16),
+
+          const Divider(height: 1, color: cardBorder),
+
+          const SizedBox(height: 14),
+
+          Row(
+            children: [
+              Expanded(
+                child: _metric(
+                  icon: Icons.schedule_rounded,
+                  value: '$duration min',
                 ),
+              ),
 
-                Padding(
-                  padding:
-                      const EdgeInsets.only(
-                    left: 16,
-                  ),
-                  child: Align(
-                    alignment:
-                        Alignment.centerLeft,
-                    child: Container(
-                      width: 2,
-                      height: 18,
-                      color:
-                          LinkRideColors
-                              .borderStrong,
-                    ),
-                  ),
+              Expanded(
+                child: _metric(
+                  icon: Icons.payments_outlined,
+                  value: 'R${cost.toStringAsFixed(2)}',
                 ),
-
-                _locationRow(
-                  icon: Icons
-                      .location_on_rounded,
-                  color:
-                      LinkRideColors.primaryBlue,
-                  label: 'TO',
-                  text: destination,
-                ),
-
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _metricCard(
-                        icon: Icons
-                            .schedule_rounded,
-                        label: 'Duration',
-                        value:
-                            '$duration min',
-                        accent:
-                            LinkRideColors.primaryBlue,
-                      ),
-                    ),
-
-                    const SizedBox(width: 10),
-
-                    Expanded(
-                      child: _metricCard(
-                        icon: Icons
-                            .payments_outlined,
-                        label: 'Total',
-                        value:
-                            'R${cost.toStringAsFixed(2)}',
-                        accent:
-                            LinkRideColors.linkGreen,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -453,90 +362,68 @@ class _PaymentScreenState
     required IconData icon,
     required String title,
     required String subtitle,
-    required Color accent,
   }) {
-    final bool selected =
-        _selectedMethod == value;
+    final bool selected = _selectedMethod == value;
+
+    final bool locked = _pendingPaystackReference != null;
 
     return Material(
       color: Colors.transparent,
+
       child: InkWell(
-        onTap: () {
-          setState(() {
-            _selectedMethod = value;
-          });
-        },
-        borderRadius:
-            BorderRadius.circular(
-          LinkRideRadius.large,
-        ),
+        onTap: locked
+            ? null
+            : () {
+                setState(() {
+                  _selectedMethod = value;
+                });
+              },
+
+        borderRadius: BorderRadius.circular(18),
+
         child: Ink(
-          padding:
-              const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(16),
+
           decoration: BoxDecoration(
-            color: selected
-                ? accent.withValues(
-                    alpha: 0.055,
-                  )
-                : LinkRideColors.surface,
-            borderRadius:
-                BorderRadius.circular(
-              LinkRideRadius.large,
-            ),
+            color: Colors.white,
+
+            borderRadius: BorderRadius.circular(18),
+
             border: Border.all(
-              color: selected
-                  ? accent.withValues(
-                      alpha: 0.32,
-                    )
-                  : LinkRideColors.border,
-              width:
-                  selected ? 1.3 : 1,
+              color: selected ? primaryBlue : cardBorder,
+              width: selected ? 1.5 : 1,
             ),
-            boxShadow:
-                selected
-                    ? LinkRideShadows.soft
-                    : const [],
           ),
+
           child: Row(
             children: [
               Container(
-                width: 46,
-                height: 46,
-                decoration:
-                    BoxDecoration(
-                  color:
-                      accent.withValues(
-                    alpha: 0.10,
-                  ),
-                  borderRadius:
-                      BorderRadius.circular(
-                    14,
-                  ),
+                width: 42,
+                height: 42,
+
+                decoration: BoxDecoration(
+                  color: primaryBlue.withValues(alpha: 0.08),
+
+                  borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(
-                  icon,
-                  color: accent,
-                  size: 22,
-                ),
+
+                child: Icon(icon, color: primaryBlue),
               ),
 
               const SizedBox(width: 13),
 
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+
                   children: [
                     Text(
                       title,
-                      style:
-                          const TextStyle(
+
+                      style: const TextStyle(
                         fontSize: 14,
-                        fontWeight:
-                            FontWeight.w800,
-                        color:
-                            LinkRideColors
-                                .textPrimary,
+                        fontWeight: FontWeight.w700,
+                        color: textPrimary,
                       ),
                     ),
 
@@ -544,169 +431,33 @@ class _PaymentScreenState
 
                     Text(
                       subtitle,
-                      style:
-                          const TextStyle(
+
+                      style: const TextStyle(
                         fontSize: 11.5,
-                        color:
-                            LinkRideColors
-                                .textSecondary,
+                        color: textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              Radio<String>(
-                value: value,
-                activeColor: accent,
+              RadioGroup<String>(
+                groupValue: _selectedMethod,
+
+                onChanged: (String? newValue) {
+                  if (locked || newValue == null) {
+                    return;
+                  }
+
+                  setState(() {
+                    _selectedMethod = newValue;
+                  });
+                },
+
+                child: Radio<String>(value: value, activeColor: primaryBlue),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _prototypeNotice() {
-    return Container(
-      width: double.infinity,
-      padding:
-          const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color:
-            LinkRideColors.warningSoft,
-        borderRadius:
-            BorderRadius.circular(
-          LinkRideRadius.medium,
-        ),
-        border: Border.all(
-          color:
-              LinkRideColors.warning
-                  .withValues(
-            alpha: 0.18,
-          ),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration:
-                BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons
-                  .science_outlined,
-              size: 20,
-              color:
-                  LinkRideColors.warning,
-            ),
-          ),
-
-          SizedBox(width: 11),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Prototype payment',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight:
-                        FontWeight.w800,
-                    color:
-                        LinkRideColors
-                            .textPrimary,
-                  ),
-                ),
-
-                SizedBox(height: 4),
-
-                Text(
-                  'No real bank, wallet or card transaction is performed. This flow demonstrates the Link Ride payment lifecycle only.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.45,
-                    color:
-                        LinkRideColors
-                            .textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _payButton({
-    required int journeyId,
-    required double cost,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: _isProcessing
-            ? null
-            : () {
-                _processPayment(
-                  journeyId,
-                );
-              },
-        child: AnimatedSwitcher(
-          duration:
-              const Duration(
-            milliseconds: 180,
-          ),
-          child: _isProcessing
-              ? const Row(
-                  key: ValueKey(
-                    'payment-progress',
-                  ),
-                  mainAxisAlignment:
-                      MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 19,
-                      height: 19,
-                      child:
-                          CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(width: 9),
-                    Text(
-                      'Processing payment...',
-                    ),
-                  ],
-                )
-              : Row(
-                  key: const ValueKey(
-                    'payment-label',
-                  ),
-                  mainAxisAlignment:
-                      MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons
-                          .lock_outline_rounded,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Pay R${cost.toStringAsFixed(2)}',
-                    ),
-                  ],
-                ),
         ),
       ),
     );
@@ -715,281 +466,115 @@ class _PaymentScreenState
   Widget _locationRow({
     required IconData icon,
     required Color color,
-    required String label,
     required String text,
   }) {
     return Row(
       children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration:
-              BoxDecoration(
-            color: color.withValues(
-              alpha: 0.09,
-            ),
-            shape:
-                BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            size: 17,
-            color: color,
-          ),
-        ),
+        Icon(icon, size: 17, color: color),
 
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
 
         Expanded(
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style:
-                    const TextStyle(
-                  fontSize: 9.5,
-                  fontWeight:
-                      FontWeight.w800,
-                  letterSpacing: 0.7,
-                  color:
-                      LinkRideColors
-                          .textMuted,
-                ),
-              ),
+          child: Text(
+            text,
 
-              const SizedBox(height: 2),
-
-              Text(
-                text,
-                style:
-                    const TextStyle(
-                  fontSize: 13,
-                  fontWeight:
-                      FontWeight.w700,
-                  color:
-                      LinkRideColors
-                          .textPrimary,
-                ),
-              ),
-            ],
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: textPrimary,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _metricCard({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color accent,
-  }) {
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 11,
-      ),
-      decoration: BoxDecoration(
-        color: accent.withValues(
-          alpha: 0.055,
+  Widget _metric({required IconData icon, required String value}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+
+      children: [
+        Icon(icon, size: 16, color: primaryBlue),
+
+        const SizedBox(width: 6),
+
+        Text(
+          value,
+
+          style: const TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: textPrimary,
+          ),
         ),
-        borderRadius:
-            BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 17,
-            color: accent,
-          ),
-
-          const SizedBox(width: 8),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style:
-                      const TextStyle(
-                    fontSize: 10.5,
-                    color:
-                        LinkRideColors
-                            .textSecondary,
-                  ),
-                ),
-
-                const SizedBox(height: 2),
-
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow:
-                      TextOverflow.ellipsis,
-                  style:
-                      const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight:
-                        FontWeight.w800,
-                    color:
-                        LinkRideColors
-                            .textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 
-  Future<void> _processPayment(
-    int journeyId,
-  ) async {
-    if (_isProcessing) {
+  Future<void> _processPayment(int journeyId) async {
+    if (_selectedMethod == 'CARD') {
+      await _startPaystackPayment(journeyId);
+
       return;
     }
 
+    await _processPrototypeWallet(journeyId);
+  }
+
+  Future<void> _startPaystackPayment(int journeyId) async {
     setState(() {
       _isProcessing = true;
     });
 
     try {
-      final String? token =
-          await _authStorage.getToken();
+      final String token = await _requireToken();
 
-      if (token == null ||
-          token.isEmpty) {
-        throw Exception(
-          'Your Link Ride session is no longer valid.',
-        );
+      final Map<String, dynamic> initialization = await _paymentService
+          .initializePaystack(token: token, journeyId: journeyId);
+
+      final String authorizationUrl =
+          initialization['authorizationUrl']?.toString() ?? '';
+
+      final String reference = initialization['reference']?.toString() ?? '';
+
+      if (authorizationUrl.isEmpty || reference.isEmpty) {
+        throw Exception('Paystack returned an incomplete checkout response.');
       }
 
-      final Map<String, dynamic> payment =
-          await _paymentService
-              .processPayment(
-        token: token,
-        journeyId: journeyId,
-        paymentMethod:
-            _selectedMethod,
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _pendingPaystackReference = reference;
+      });
+
+      final bool launched = await launchUrl(
+        Uri.parse(authorizationUrl),
+        mode: LaunchMode.externalApplication,
       );
 
-      if (!mounted) {
-        return;
-      }
-
-      final String reference =
-          payment['transactionReference']
-                  ?.toString() ??
-              'Unavailable';
-
-      bool ticketIssued = false;
-
-      try {
-        await _ticketService.issueTicket(
-          token: token,
-          journeyId: journeyId,
-        );
-
-        ticketIssued = true;
-      } catch (ticketError) {
-        debugPrint(
-          'Automatic ticket issue error: $ticketError',
-        );
+      if (!launched) {
+        throw Exception('Unable to open the Paystack checkout.');
       }
 
       if (!mounted) {
         return;
       }
 
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (BuildContext dialogContext) {
-          return AlertDialog(
-            icon: Container(
-              width: 62,
-              height: 62,
-              decoration:
-                  const BoxDecoration(
-                color:
-                    LinkRideColors
-                        .softGreen,
-                shape:
-                    BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_rounded,
-                size: 31,
-                color:
-                    LinkRideColors
-                        .linkGreen,
-              ),
-            ),
-            title: const Text(
-              'Payment successful',
-              textAlign:
-                  TextAlign.center,
-            ),
-            content: Text(
-              ticketIssued
-                  ? 'Your journey has been paid successfully and your digital ticket is ready.\n\nReference: $reference'
-                  : 'Your journey has been paid successfully. Your ticket could not be prepared automatically, but you can open the journey and continue to the ticket.\n\nReference: $reference',
-              textAlign:
-                  TextAlign.center,
-            ),
-            actionsAlignment:
-                MainAxisAlignment.center,
-            actions: [
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(
-                    dialogContext,
-                  );
-                },
-                child: const Text(
-                  'Continue',
-                ),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      Navigator.pop(
-        context,
-        true,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Complete the Paystack test payment, then return to Link Ride.',
+          ),
+        ),
       );
     } catch (error) {
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(
-            error
-                .toString()
-                .replaceFirst(
-                  'Exception: ',
-                  '',
-                ),
-          ),
-        ),
-      );
+      _showError(error);
     } finally {
       if (mounted) {
         setState(() {
@@ -999,9 +584,201 @@ class _PaymentScreenState
     }
   }
 
-  int _asInt(
-    dynamic value,
-  ) {
+  Future<void> _verifyPendingPaystack() async {
+    final String? reference = _pendingPaystackReference;
+
+    if (reference == null || reference.isEmpty || _isProcessing) {
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      final String token = await _requireToken();
+
+      final Map<String, dynamic> verification = await _paymentService
+          .verifyPaystack(token: token, reference: reference);
+
+      final bool paid = verification['paid'] == true;
+
+      final String gatewayStatus =
+          verification['gatewayStatus']?.toString() ?? 'unknown';
+
+      if (!paid) {
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _pendingPaystackReference = null;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Paystack payment was not completed. Status: $gatewayStatus',
+            ),
+          ),
+        );
+
+        return;
+      }
+
+      final dynamic rawPayment = verification['payment'];
+
+      if (rawPayment is! Map) {
+        throw Exception(
+          'Link Ride returned an invalid verified payment response.',
+        );
+      }
+
+      final Map<String, dynamic> payment = Map<String, dynamic>.from(
+        rawPayment,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _pendingPaystackReference = null;
+      });
+
+      await _completeSuccessfulPayment(token: token, payment: payment);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      _showError(error);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _processPrototypeWallet(int journeyId) async {
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      final String token = await _requireToken();
+
+      final Map<String, dynamic> payment = await _paymentService.processPayment(
+        token: token,
+        journeyId: journeyId,
+        paymentMethod: 'WALLET',
+      );
+
+      await _completeSuccessfulPayment(token: token, payment: payment);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      _showError(error);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _completeSuccessfulPayment({
+    required String token,
+    required Map<String, dynamic> payment,
+  }) async {
+    if (!mounted) {
+      return;
+    }
+
+    final int journeyId = _asInt(payment['journeyId']);
+
+    final String reference =
+        payment['transactionReference']?.toString() ?? 'Unavailable';
+
+    bool ticketIssued = false;
+
+    try {
+      await _ticketService.issueTicket(token: token, journeyId: journeyId);
+
+      ticketIssued = true;
+    } catch (ticketError) {
+      debugPrint('Automatic ticket issue error: $ticketError');
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+
+      barrierDismissible: false,
+
+      builder: (BuildContext context) {
+        return AlertDialog(
+          icon: const Icon(
+            Icons.check_circle_rounded,
+            color: linkGreen,
+            size: 46,
+          ),
+
+          title: const Text('Payment successful'),
+
+          content: Text(
+            ticketIssued
+                ? 'Your journey has been paid successfully and your digital ticket is ready.\n\nReference: $reference'
+                : 'Your journey has been paid successfully. Your ticket could not be prepared automatically, but you can open the journey and continue to the ticket.\n\nReference: $reference',
+          ),
+
+          actions: [
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+
+              style: FilledButton.styleFrom(backgroundColor: primaryBlue),
+
+              child: const Text('Continue'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.pop(context, true);
+  }
+
+  Future<String> _requireToken() async {
+    final String? token = await _authStorage.getToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception('Your Link Ride session is no longer valid.');
+    }
+
+    return token;
+  }
+
+  void _showError(Object error) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+    );
+  }
+
+  int _asInt(dynamic value) {
     if (value is int) {
       return value;
     }
@@ -1010,16 +787,10 @@ class _PaymentScreenState
       return value.toInt();
     }
 
-    return int.tryParse(
-          value?.toString() ??
-              '',
-        ) ??
-        0;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
-  double _asDouble(
-    dynamic value,
-  ) {
+  double _asDouble(dynamic value) {
     if (value is double) {
       return value;
     }
@@ -1028,10 +799,6 @@ class _PaymentScreenState
       return value.toDouble();
     }
 
-    return double.tryParse(
-          value?.toString() ??
-              '',
-        ) ??
-        0.0;
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
   }
 }
