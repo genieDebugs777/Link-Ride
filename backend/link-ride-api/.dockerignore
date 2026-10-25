@@ -12,3 +12,4 @@ target/
 *.p12
 *.pfx
 *.original
+firebase-service-account.json
