@@ -1,0 +1,14 @@
+target/
+.git/
+.gitignore
+.idea/
+.vscode/
+*.iml
+*.log
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.original
