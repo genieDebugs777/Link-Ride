@@ -8,10 +8,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import za.co.linkride.link_ride_api.model.FirebaseInstallation;
 import za.co.linkride.link_ride_api.repository.FirebaseInstallationRepository;
-
+import org.springframework.context.annotation.Profile;
 import java.util.List;
 
 /** Best-effort push delivery. The database notification is authoritative. */
+
+@Profile("!test")
 @Service
 public class FirebasePushNotificationService {
 
